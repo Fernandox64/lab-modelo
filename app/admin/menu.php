@@ -25,6 +25,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 site_setting_set('menu_graduacao_url', $graduacaoUrl);
                 site_setting_set('menu_pos_graduacao_label', $posLabel);
                 site_setting_set('menu_pos_graduacao_url', $posUrl);
+                admin_audit_log('menu_update', [
+                    'graduacao_label' => $graduacaoLabel,
+                    'graduacao_url' => $graduacaoUrl,
+                    'pos_label' => $posLabel,
+                    'pos_url' => $posUrl,
+                ], 'site_settings');
                 $success = 'Menu principal atualizado com sucesso.';
             }
         } catch (Throwable $e) {

@@ -1,6 +1,24 @@
 <?php
 declare(strict_types=1);
 
+function apply_security_headers(): void {
+    if (PHP_SAPI === 'cli' || headers_sent()) {
+        return;
+    }
+    header('X-Frame-Options: SAMEORIGIN');
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+    header("Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://cdn.jsdelivr.net data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'");
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+    if ($isHttps) {
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    }
+}
+
+apply_security_headers();
+
 if (session_status() !== PHP_SESSION_ACTIVE) {
     $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
         || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
@@ -1298,6 +1316,151 @@ function ensure_default_admin_user(): void {
         error_log('Failed ensuring default admin user: ' . $e->getMessage());
     }
 }
+function ensure_admin_auth_events_table(): void {
+    static $ready = false;
+    if ($ready) {
+        return;
+    }
+    $ready = true;
+    try {
+        db()->exec(
+            "CREATE TABLE IF NOT EXISTS admin_auth_events (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                email VARCHAR(190) NOT NULL,
+                ip_address VARCHAR(64) NOT NULL,
+                success TINYINT(1) NOT NULL DEFAULT 0,
+                reason VARCHAR(120) NOT NULL DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_auth_created (created_at),
+                INDEX idx_auth_ip_email (ip_address, email, created_at)
+            ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+        );
+    } catch (Throwable $e) {
+        error_log('Failed ensuring admin_auth_events table: ' . $e->getMessage());
+    }
+}
+function ensure_admin_audit_logs_table(): void {
+    static $ready = false;
+    if ($ready) {
+        return;
+    }
+    $ready = true;
+    try {
+        db()->exec(
+            "CREATE TABLE IF NOT EXISTS admin_audit_logs (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NULL,
+                user_email VARCHAR(190) NOT NULL DEFAULT '',
+                user_role VARCHAR(30) NOT NULL DEFAULT '',
+                action VARCHAR(120) NOT NULL,
+                target VARCHAR(190) NOT NULL DEFAULT '',
+                details_json JSON NULL,
+                ip_address VARCHAR(64) NOT NULL DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_audit_created (created_at),
+                INDEX idx_audit_user (user_id, created_at)
+            ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+        );
+    } catch (Throwable $e) {
+        error_log('Failed ensuring admin_audit_logs table: ' . $e->getMessage());
+    }
+}
+function admin_client_ip(): string {
+    $candidates = [
+        (string)($_SERVER['HTTP_CF_CONNECTING_IP'] ?? ''),
+        (string)($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''),
+        (string)($_SERVER['REMOTE_ADDR'] ?? ''),
+    ];
+    foreach ($candidates as $ip) {
+        if ($ip === '') {
+            continue;
+        }
+        $parts = array_map('trim', explode(',', $ip));
+        foreach ($parts as $p) {
+            if (filter_var($p, FILTER_VALIDATE_IP)) {
+                return $p;
+            }
+        }
+    }
+    return '0.0.0.0';
+}
+function admin_record_auth_event(string $email, bool $success, string $reason = ''): void {
+    ensure_admin_auth_events_table();
+    try {
+        $stmt = db()->prepare(
+            'INSERT INTO admin_auth_events (email, ip_address, success, reason)
+             VALUES (:email, :ip_address, :success, :reason)'
+        );
+        $stmt->execute([
+            ':email' => mb_strtolower(trim($email), 'UTF-8'),
+            ':ip_address' => admin_client_ip(),
+            ':success' => $success ? 1 : 0,
+            ':reason' => substr($reason, 0, 120),
+        ]);
+    } catch (Throwable $e) {
+        error_log('Failed recording admin auth event: ' . $e->getMessage());
+    }
+}
+function admin_is_rate_limited(string $email): bool {
+    ensure_admin_auth_events_table();
+    try {
+        $stmt = db()->prepare(
+            'SELECT COUNT(*) AS failures
+             FROM admin_auth_events
+             WHERE success = 0
+               AND created_at >= (NOW() - INTERVAL 15 MINUTE)
+               AND (email = :email OR ip_address = :ip_address)'
+        );
+        $stmt->execute([
+            ':email' => mb_strtolower(trim($email), 'UTF-8'),
+            ':ip_address' => admin_client_ip(),
+        ]);
+        $count = (int)$stmt->fetchColumn();
+        return $count >= ADMIN_MAX_LOGIN_ATTEMPTS;
+    } catch (Throwable $e) {
+        error_log('Failed checking admin rate limit: ' . $e->getMessage());
+        return false;
+    }
+}
+function admin_audit_log(string $action, array $details = [], string $target = ''): void {
+    ensure_admin_audit_logs_table();
+    $user = admin_current_user();
+    try {
+        $stmt = db()->prepare(
+            'INSERT INTO admin_audit_logs (user_id, user_email, user_role, action, target, details_json, ip_address)
+             VALUES (:user_id, :user_email, :user_role, :action, :target, :details_json, :ip_address)'
+        );
+        $stmt->execute([
+            ':user_id' => $user['id'] > 0 ? $user['id'] : null,
+            ':user_email' => (string)$user['email'],
+            ':user_role' => (string)$user['role'],
+            ':action' => substr($action, 0, 120),
+            ':target' => substr($target, 0, 190),
+            ':details_json' => empty($details) ? null : json_encode($details, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ':ip_address' => admin_client_ip(),
+        ]);
+    } catch (Throwable $e) {
+        error_log('Failed writing admin audit log: ' . $e->getMessage());
+    }
+}
+function admin_validate_password_strength(string $password): ?string {
+    if (strlen($password) < 10) {
+        return 'A senha deve ter ao menos 10 caracteres.';
+    }
+    if (!preg_match('/[A-Z]/', $password)) {
+        return 'A senha precisa conter ao menos uma letra maiuscula.';
+    }
+    if (!preg_match('/[a-z]/', $password)) {
+        return 'A senha precisa conter ao menos uma letra minuscula.';
+    }
+    if (!preg_match('/[0-9]/', $password)) {
+        return 'A senha precisa conter ao menos um numero.';
+    }
+    if (!preg_match('/[^A-Za-z0-9]/', $password)) {
+        return 'A senha precisa conter ao menos um caractere especial.';
+    }
+    return null;
+}
 function admin_current_user(): array {
     return [
         'id' => (int)($_SESSION['admin_user_id'] ?? 0),
@@ -1341,11 +1504,14 @@ function admin_is_login_locked(): bool {
     $lockUntil = (int)($_SESSION['admin_lock_until'] ?? 0);
     return $lockUntil > time();
 }
-function admin_register_login_failure(): void {
+function admin_register_login_failure(string $email = '', string $reason = 'invalid_credentials'): void {
     $attempts = (int)($_SESSION['admin_login_attempts'] ?? 0) + 1;
     $_SESSION['admin_login_attempts'] = $attempts;
     if ($attempts >= ADMIN_MAX_LOGIN_ATTEMPTS) {
         $_SESSION['admin_lock_until'] = time() + ADMIN_LOCKOUT_SECONDS;
+    }
+    if ($email !== '') {
+        admin_record_auth_event($email, false, $reason);
     }
 }
 function admin_clear_login_failures(): void {
@@ -1354,6 +1520,7 @@ function admin_clear_login_failures(): void {
 function admin_login(string $email, string $password): bool {
     ensure_default_admin_user();
     if (admin_is_login_locked()) {
+        admin_record_auth_event($email, false, 'session_locked');
         return false;
     }
     try {
@@ -1370,9 +1537,11 @@ function admin_login(string $email, string $password): bool {
         $user = false;
     }
     if (!$user || (int)($user['is_active'] ?? 0) !== 1) {
+        admin_record_auth_event($email, false, 'unknown_or_inactive_user');
         return false;
     }
     if (!password_verify($password, (string)$user['password_hash'])) {
+        admin_record_auth_event($email, false, 'invalid_password');
         return false;
     }
     session_regenerate_id(true);
@@ -1387,10 +1556,15 @@ function admin_login(string $email, string $password): bool {
     } catch (Throwable $e) {
         error_log('Failed updating admin last_login_at: ' . $e->getMessage());
     }
+    admin_record_auth_event((string)$user['email'], true, 'login_success');
+    admin_audit_log('admin_login_success', ['email' => (string)$user['email']], 'admin_login');
     admin_clear_login_failures();
     return true;
 }
 function admin_logout(): void {
+    if (is_admin_logged_in()) {
+        admin_audit_log('admin_logout', [], 'admin_logout');
+    }
     $params = session_get_cookie_params();
     setcookie(session_name(), '', [
         'expires' => time() - 3600,

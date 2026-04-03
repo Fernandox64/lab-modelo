@@ -79,6 +79,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
 
             hero_carousel_save($slides);
+            admin_audit_log('carousel_update_slide', [
+                'slide_index' => $slideIndex,
+                'image' => $image,
+                'title' => (string)($_POST["slide_{$slideIndex}_title"] ?? ''),
+            ], 'site_settings');
             $success = "Slide {$slideIndex} atualizado com sucesso.";
         } catch (Throwable $e) {
             $error = 'Falha ao salvar configuracao do carrossel.';

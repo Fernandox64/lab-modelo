@@ -19,15 +19,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $password = (string)($_POST['password'] ?? '');
         $remember = isset($_POST['remember_me']);
 
-        if (admin_login($email, $password)) {
+        if (admin_is_rate_limited($email)) {
+            admin_register_login_failure($email, 'rate_limited');
+            $error = 'Muitas tentativas em curto periodo. Aguarde 15 minutos e tente novamente.';
+        } elseif (admin_login($email, $password)) {
             if ($remember) {
                 admin_enable_remember_me();
             }
             redirect('/admin/dashboard.php');
+        } else {
+            admin_register_login_failure($email, 'invalid_credentials');
+            $error = 'Credenciais invalidas.';
         }
-
-        admin_register_login_failure();
-        $error = 'Credenciais invalidas.';
     }
 }
 ?>

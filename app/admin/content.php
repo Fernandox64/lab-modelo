@@ -94,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($action === 'delete' && $id > 0) {
             $stmt = $pdo->prepare("DELETE FROM {$meta['table']} WHERE id = :id");
             $stmt->execute([':id' => $id]);
+            admin_audit_log('content_delete', ['type' => $type, 'id' => $id], $meta['table']);
             $success = 'Registro removido com sucesso.';
         }
 
@@ -130,6 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ':published_at' => $publishedAt,
                         ':id' => $id,
                     ]);
+                    admin_audit_log('content_update', ['type' => $type, 'id' => $id, 'slug' => $slug, 'title' => $title], $meta['table']);
                     $success = 'Registro atualizado com sucesso.';
                 } else {
                     $stmt = $pdo->prepare(
@@ -145,6 +147,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ':image' => $image,
                         ':published_at' => $publishedAt,
                     ]);
+                    $newId = (int)$pdo->lastInsertId();
+                    admin_audit_log('content_create', ['type' => $type, 'id' => $newId, 'slug' => $slug, 'title' => $title], $meta['table']);
                     $success = 'Registro criado com sucesso.';
                 }
             }

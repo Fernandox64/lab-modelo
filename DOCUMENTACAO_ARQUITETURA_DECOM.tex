@@ -286,6 +286,69 @@ A pagina \texttt{/noticias/index.php} foi estruturada para:
     \item importacao massiva do acervo de noticias antigo para o novo portal.
 \end{itemize}
 
+\section{Seguranca: vulnerabilidades e mitigacoes}
+\subsection{Vulnerabilidades identificadas (estado anterior)}
+\begin{itemize}
+    \item \textbf{Autenticacao administrativa centralizada em variavel de ambiente}: havia apenas uma credencial global, sem gestao de contas por usuario.
+    \item \textbf{Ausencia de RBAC}: usuarios administrativos nao tinham segregacao de permissao por modulo.
+    \item \textbf{Controle de tentativas de login fraco}: lockout baseado apenas em sessao, sem correlacao por IP/e-mail.
+    \item \textbf{Sem trilha de auditoria persistente}: alteracoes administrativas nao eram registradas em tabela dedicada.
+    \item \textbf{Headers HTTP de seguranca ausentes}: protecoes de browser (frame, MIME sniffing, CSP etc.) nao estavam padronizadas.
+    \item \textbf{Politica de senha permissiva}: criacao e reset de senha com criterios minimos.
+\end{itemize}
+
+\subsection{Mitigacoes implementadas nesta etapa}
+\begin{itemize}
+    \item \textbf{RBAC completo no admin} com perfis:
+    \begin{itemize}
+        \item \texttt{superadmin}
+        \item \texttt{editor}
+        \item \texttt{secretaria}
+    \end{itemize}
+    aplicados por \texttt{require\_admin\_permission(...)} em cada modulo administrativo.
+    \item \textbf{Gestao de contas administrativas} via \texttt{/admin/users.php}:
+    \begin{itemize}
+        \item criar, editar, ativar/desativar usuarios;
+        \item redefinir senha;
+        \item atribuir perfil.
+    \end{itemize}
+    \item \textbf{Novas tabelas de seguranca}:
+    \begin{itemize}
+        \item \texttt{admin\_users}
+        \item \texttt{admin\_auth\_events}
+        \item \texttt{admin\_audit\_logs}
+    \end{itemize}
+    \item \textbf{Rate limiting de login por IP/e-mail} com janela de 15 minutos (\texttt{admin\_auth\_events}).
+    \item \textbf{Auditoria de acoes criticas}:
+    \begin{itemize}
+        \item login/logout;
+        \item criacao/edicao/reset de usuarios;
+        \item create/update/delete de conteudo;
+        \item alteracao de menu e carrossel.
+    \end{itemize}
+    \item \textbf{Headers de seguranca HTTP} em todas as respostas:
+    \begin{itemize}
+        \item \texttt{X-Frame-Options}
+        \item \texttt{X-Content-Type-Options}
+        \item \texttt{Referrer-Policy}
+        \item \texttt{Permissions-Policy}
+        \item \texttt{Content-Security-Policy}
+        \item \texttt{Strict-Transport-Security} (quando HTTPS)
+    \end{itemize}
+    \item \textbf{Politica de senha forte} para contas administrativas:
+    minimo de 10 caracteres, com maiuscula, minuscula, numero e caractere especial.
+    \item \textbf{Opcao ``lembrar senha'' no admin} implementada com cookie de sessao persistente (30 dias), com limpeza no logout.
+\end{itemize}
+
+\subsection{Risco residual e proximas acoes recomendadas}
+\begin{itemize}
+    \item substituir ``lembrar senha'' por \textbf{token proprio revogavel por dispositivo} (mais seguro que sessao persistente simples);
+    \item adicionar \textbf{2FA} para perfil \texttt{superadmin};
+    \item mover segredos para \textbf{gerenciador de secrets} (evitar credenciais em compose/ambiente sem cofre);
+    \item implementar rotina de \textbf{backup com teste de restauracao} e trilha de conformidade;
+    \item incluir varredura automatica de dependencias e teste de seguranca no pipeline de deploy.
+\end{itemize}
+
 \section{Racional de desempenho e baixo consumo}
 As decisoes tecnicas priorizam ambiente institucional com recursos modestos:
 \begin{itemize}

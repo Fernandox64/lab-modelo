@@ -29,8 +29,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                     throw new RuntimeException('Informe um e-mail válido.');
                 }
-                if (strlen($password) < 8) {
-                    throw new RuntimeException('A senha deve ter ao menos 8 caracteres.');
+                $passwordError = admin_validate_password_strength($password);
+                if ($passwordError !== null) {
+                    throw new RuntimeException($passwordError);
                 }
 
                 $stmt = db()->prepare(
@@ -43,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ':password_hash' => password_hash($password, PASSWORD_DEFAULT),
                     ':role' => $role,
                 ]);
+                admin_audit_log('admin_user_create', ['email' => $email, 'role' => $role], 'admin_users');
                 $success = 'Conta criada com sucesso.';
             }
 
@@ -75,14 +77,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ':is_active' => $isActive,
                     ':id' => $id,
                 ]);
+                admin_audit_log('admin_user_update', ['id' => $id, 'email' => $email, 'role' => $role, 'is_active' => $isActive], 'admin_users');
                 $success = 'Conta atualizada com sucesso.';
             }
 
             if ($action === 'reset_password') {
                 $id = (int)($_POST['id'] ?? 0);
                 $newPassword = (string)($_POST['new_password'] ?? '');
-                if ($id <= 0 || strlen($newPassword) < 8) {
-                    throw new RuntimeException('Senha inválida. Use ao menos 8 caracteres.');
+                if ($id <= 0) {
+                    throw new RuntimeException('Conta inválida para redefinição de senha.');
+                }
+                $passwordError = admin_validate_password_strength($newPassword);
+                if ($passwordError !== null) {
+                    throw new RuntimeException($passwordError);
                 }
                 $stmt = db()->prepare(
                     'UPDATE admin_users SET password_hash = :password_hash WHERE id = :id'
@@ -91,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ':password_hash' => password_hash($newPassword, PASSWORD_DEFAULT),
                     ':id' => $id,
                 ]);
+                admin_audit_log('admin_user_reset_password', ['id' => $id], 'admin_users');
                 $success = 'Senha redefinida com sucesso.';
             }
         } catch (Throwable $e) {
@@ -195,7 +203,7 @@ $users = db()->query(
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Senha inicial</label>
-                                <input class="form-control" type="password" name="password" required minlength="8">
+                                <input class="form-control" type="password" name="password" required minlength="10">
                             </div>
                             <div class="col-12">
                                 <button type="submit" class="btn btn-primary">Criar conta</button>
@@ -290,8 +298,8 @@ $users = db()->query(
                                                 <input type="hidden" name="id" value="<?= e((string)$u['id']) ?>">
                                                 <div class="modal-header"><h5 class="modal-title">Redefinir senha</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                                                 <div class="modal-body">
-                                                    <label class="form-label">Nova senha (min. 8 caracteres)</label>
-                                                    <input class="form-control" type="password" name="new_password" minlength="8" required>
+                                                    <label class="form-label">Nova senha (min. 10, maiuscula, minuscula, numero e especial)</label>
+                                                    <input class="form-control" type="password" name="new_password" minlength="10" required>
                                                 </div>
                                                 <div class="modal-footer">
                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
