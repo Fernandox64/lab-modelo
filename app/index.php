@@ -7,6 +7,7 @@ $defesas = demo_defesas();
 $jobs = demo_jobs();
 $menuGraduacao = primary_menu_item('graduacao');
 $menuPosGraduacao = primary_menu_item('pos_graduacao');
+$heroSlides = hero_carousel_get();
 
 page_header('Inicio');
 ?>
@@ -14,13 +15,50 @@ page_header('Inicio');
     <div class="container">
         <div class="row g-4 align-items-center">
             <div class="col-lg-7">
-                <span class="badge text-bg-light mb-3">Departamento de Computacao</span>
-                <h1 class="display-6 fw-bold">Portal institucional do DECOM</h1>
-                <p class="lead">Site dinamico com noticias e editais publicados direto pela area administrativa.</p>
-                <div class="d-flex flex-wrap gap-2">
-                    <a class="btn btn-light" href="/noticias/index.php">Ultimas noticias</a>
-                    <a class="btn btn-outline-light" href="/noticias/editais.php">Editais</a>
-                    <a class="btn btn-outline-light" href="/admin/dashboard.php">Area admin</a>
+                <div id="heroCarousel" class="carousel slide hero-carousel shadow-lg" data-bs-ride="carousel">
+                    <div class="carousel-indicators">
+                        <?php foreach ($heroSlides as $idx => $slide): ?>
+                            <button
+                                type="button"
+                                data-bs-target="#heroCarousel"
+                                data-bs-slide-to="<?= e((string)$idx) ?>"
+                                class="<?= $idx === 0 ? 'active' : '' ?>"
+                                <?= $idx === 0 ? 'aria-current="true"' : '' ?>
+                                aria-label="Slide <?= e((string)($idx + 1)) ?>">
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
+                    <div class="carousel-inner rounded-4 overflow-hidden">
+                        <?php foreach ($heroSlides as $idx => $slide): ?>
+                            <div class="carousel-item<?= $idx === 0 ? ' active' : '' ?>">
+                                <img src="<?= e((string)$slide['image']) ?>" class="d-block w-100 hero-slide-image" alt="<?= e((string)$slide['title']) ?>">
+                                <div class="carousel-caption text-start">
+                                    <span class="badge text-bg-light mb-2"><?= e((string)$slide['badge']) ?></span>
+                                    <?php if ($idx === 0): ?>
+                                        <h1 class="display-6 fw-bold mb-2"><?= e((string)$slide['title']) ?></h1>
+                                    <?php else: ?>
+                                        <h2 class="h2 fw-bold mb-2"><?= e((string)$slide['title']) ?></h2>
+                                    <?php endif; ?>
+                                    <p class="lead mb-<?= $idx === 0 ? '3' : '0' ?>"><?= e((string)$slide['text']) ?></p>
+                                    <?php if ($idx === 0): ?>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <a class="btn btn-light" href="/noticias/index.php">Ultimas noticias</a>
+                                            <a class="btn btn-outline-light" href="/noticias/editais.php">Editais</a>
+                                            <a class="btn btn-outline-light" href="/admin/dashboard.php">Area admin</a>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Anterior</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Proximo</span>
+                    </button>
                 </div>
             </div>
             <div class="col-lg-5">

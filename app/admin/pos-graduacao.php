@@ -108,6 +108,7 @@ $graduates = $selectedYear > 0 ? ppgcc_graduates_by_year($selectedYear) : [];
                     <li class="nav-item"><a href="/admin/pessoal.php" class="nav-link"><p>Pessoal</p></a></li>
                     <li class="nav-item"><a href="/admin/atendimento-docentes.php" class="nav-link"><p>Atendimento Docentes</p></a></li>
                     <li class="nav-item"><a href="/admin/menu.php" class="nav-link"><p>Menu Principal</p></a></li>
+                    <li class="nav-item"><a href="/admin/carousel.php" class="nav-link"><p>Carrossel Home</p></a></li>
                     <li class="nav-item"><a href="/admin/horarios.php" class="nav-link"><p>Horarios de Aula</p></a></li>
                     <li class="nav-item"><a href="/admin/pos-graduacao.php" class="nav-link active"><p>Pos-graduacao</p></a></li>
                     <li class="nav-item"><a href="/admin/pos-publicacoes.php?tipo=noticias" class="nav-link"><p>Noticias/Editais Pos</p></a></li>
@@ -238,3 +239,4 @@ tinymce.init({
 </script>
 </body>
 </html>
+

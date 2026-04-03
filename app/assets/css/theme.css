@@ -89,6 +89,38 @@ body {
     color: #fff;
 }
 
+.hero-carousel {
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.hero-slide-image {
+    height: 360px;
+    object-fit: cover;
+    filter: brightness(.65);
+}
+
+.hero-carousel .carousel-caption {
+    left: 1.25rem;
+    right: 1.25rem;
+    bottom: 1.5rem;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, .45);
+}
+
+.hero-carousel .carousel-caption .lead {
+    color: #fff;
+}
+
+@media (max-width: 991.98px) {
+    .hero-slide-image {
+        height: 300px;
+    }
+    .hero-carousel .carousel-caption h1,
+    .hero-carousel .carousel-caption h2 {
+        font-size: 1.6rem;
+    }
+}
+
 .card-link {
     text-decoration: none;
     color: inherit;

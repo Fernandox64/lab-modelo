@@ -183,6 +183,7 @@ $items = $pdo->query('SELECT id, slug, role_type, name, position, email, phone, 
                     <li class="nav-item"><a href="/admin/pessoal.php" class="nav-link active"><p>Pessoal</p></a></li>
                     <li class="nav-item"><a href="/admin/atendimento-docentes.php" class="nav-link"><p>Atendimento Docentes</p></a></li>
                     <li class="nav-item"><a href="/admin/menu.php" class="nav-link"><p>Menu Principal</p></a></li>
+                    <li class="nav-item"><a href="/admin/carousel.php" class="nav-link"><p>Carrossel Home</p></a></li>
                     <li class="nav-item"><a href="/admin/horarios.php" class="nav-link"><p>Horarios de Aula</p></a></li>
                     <li class="nav-item"><a href="/admin/pos-graduacao.php" class="nav-link"><p>Pos-graduacao</p></a></li>
                     <li class="nav-item"><a href="/admin/pos-publicacoes.php?tipo=noticias" class="nav-link"><p>Noticias/Editais Pos</p></a></li>
@@ -226,7 +227,7 @@ $items = $pdo->query('SELECT id, slug, role_type, name, position, email, phone, 
                                     </select>
                                 </div>
                                 <div class="col-md-8">
-                                    <label class="form-label">Cargo / Filiação</label>
+                                    <label class="form-label">Cargo / FiliaÃ§Ã£o</label>
                                     <input class="form-control" name="position" required value="<?= e((string)($editing['position'] ?? '')) ?>">
                                 </div>
                                 <div class="col-md-4">
@@ -331,3 +332,4 @@ $items = $pdo->query('SELECT id, slug, role_type, name, position, email, phone, 
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-rc3/dist/js/adminlte.min.js"></script>
 </body>
 </html>
+

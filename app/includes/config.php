@@ -107,6 +107,57 @@ function site_setting_set(string $key, string $value): void {
     );
     $stmt->execute([':k' => $key, ':v' => $value]);
 }
+function hero_carousel_defaults(): array {
+    return [
+        [
+            'image' => '/assets/images/carousel/decom-campus.png',
+            'badge' => 'Departamento de Computacao',
+            'title' => 'Portal Institucional do DECOM/UFOP',
+            'text' => 'Comunicacao academica e administrativa com noticias, editais, defesas e servicos para alunos.',
+        ],
+        [
+            'image' => '/assets/images/carousel/ufop-campus-map.png',
+            'badge' => 'Ensino e Estrutura',
+            'title' => 'Informacoes de cursos, horarios e atendimento',
+            'text' => 'Acesso rapido para graduacao, pos, monografias e servicos ao estudante.',
+        ],
+        [
+            'image' => '/assets/images/carousel/tech-circuit.jpg',
+            'badge' => 'Pesquisa e Inovacao',
+            'title' => 'Tecnologia, ciencia de dados e inteligencia artificial',
+            'text' => 'Projetos, laboratorios e iniciativas do DECOM para formacao e impacto social.',
+        ],
+    ];
+}
+function hero_carousel_get(): array {
+    $defaults = hero_carousel_defaults();
+    $slides = [];
+    for ($i = 1; $i <= 3; $i++) {
+        $d = $defaults[$i - 1];
+        $slides[] = [
+            'image' => trim(site_setting_get("hero_slide_{$i}_image", $d['image'])),
+            'badge' => trim(site_setting_get("hero_slide_{$i}_badge", $d['badge'])),
+            'title' => trim(site_setting_get("hero_slide_{$i}_title", $d['title'])),
+            'text' => trim(site_setting_get("hero_slide_{$i}_text", $d['text'])),
+        ];
+    }
+    return $slides;
+}
+function hero_carousel_save(array $slides): void {
+    $defaults = hero_carousel_defaults();
+    for ($i = 1; $i <= 3; $i++) {
+        $input = $slides[$i - 1] ?? [];
+        $d = $defaults[$i - 1];
+        $image = trim((string)($input['image'] ?? $d['image']));
+        $badge = trim((string)($input['badge'] ?? $d['badge']));
+        $title = trim((string)($input['title'] ?? $d['title']));
+        $text = trim((string)($input['text'] ?? $d['text']));
+        site_setting_set("hero_slide_{$i}_image", $image !== '' ? $image : $d['image']);
+        site_setting_set("hero_slide_{$i}_badge", $badge !== '' ? $badge : $d['badge']);
+        site_setting_set("hero_slide_{$i}_title", $title !== '' ? $title : $d['title']);
+        site_setting_set("hero_slide_{$i}_text", $text !== '' ? $text : $d['text']);
+    }
+}
 function horarios_cc_2026_template_html(): string {
     return <<<'HTML'
 <h2>Horarios de Aula - Bacharelado em Ciencia da Computacao (2026-1)</h2>
@@ -541,7 +592,7 @@ function normalize_menu_url(string $url, string $fallback): string {
 function primary_menu_item(string $slot): array {
     $defaults = [
         'graduacao' => ['label' => 'Graduacao', 'url' => '/ensino/ciencia-computacao.php'],
-        'pos_graduacao' => ['label' => 'Pós', 'url' => '/ensino/pos-graduacao.php'],
+        'pos_graduacao' => ['label' => 'Pós graduação', 'url' => '/ensino/pos-graduacao.php'],
     ];
     $default = $defaults[$slot] ?? ['label' => 'Menu', 'url' => '/'];
     $label = trim(site_setting_get('menu_' . $slot . '_label', $default['label']));
