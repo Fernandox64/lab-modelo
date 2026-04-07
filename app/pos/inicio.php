@@ -3,6 +3,8 @@ require __DIR__ . '/../includes/config.php';
 
 ensure_ppgcc_tables();
 $pages = ppgcc_pages_list(true);
+$pesquisa = ppgcc_section_get('pesquisa');
+$extensao = ppgcc_section_get('extensao');
 
 page_header('Subsite da Pos-graduacao');
 ?>
@@ -15,6 +17,37 @@ page_header('Subsite da Pos-graduacao');
             <a class="btn btn-primary btn-sm" href="/pos/noticias.php">Noticias da Pos</a>
             <a class="btn btn-danger btn-sm" href="/pos/editais.php">Editais da Pos</a>
             <a class="btn btn-dark btn-sm" href="/pos/processo-seletivo.php">Processo Seletivo</a>
+            <a class="btn btn-outline-primary btn-sm" href="/pos/docentes.php">Docentes da Pos</a>
+            <a class="btn btn-outline-secondary btn-sm" href="/pos/atendimento-docentes.php">Atendimento da Pos</a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header border-bottom-0">
+            <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabPesquisaPos" type="button" role="tab">Pesquisa</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabExtensaoPos" type="button" role="tab">Extensao</button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="tabPesquisaPos" role="tabpanel">
+                    <h2 class="h5 mb-2"><?= e((string)$pesquisa['title']) ?></h2>
+                    <?php if ((string)$pesquisa['summary'] !== ''): ?><p class="text-muted"><?= e((string)$pesquisa['summary']) ?></p><?php endif; ?>
+                    <div class="mb-2"><?= render_rich_text((string)$pesquisa['content_html']) ?></div>
+                    <a class="btn btn-outline-primary btn-sm" href="/pos/pesquisa.php">Abrir pagina Pesquisa</a>
+                </div>
+                <div class="tab-pane fade" id="tabExtensaoPos" role="tabpanel">
+                    <h2 class="h5 mb-2"><?= e((string)$extensao['title']) ?></h2>
+                    <?php if ((string)$extensao['summary'] !== ''): ?><p class="text-muted"><?= e((string)$extensao['summary']) ?></p><?php endif; ?>
+                    <div class="mb-2"><?= render_rich_text((string)$extensao['content_html']) ?></div>
+                    <a class="btn btn-outline-primary btn-sm" href="/pos/extensao.php">Abrir pagina Extensao</a>
+                </div>
+            </div>
         </div>
     </div>
 

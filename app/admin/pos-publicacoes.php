@@ -9,6 +9,7 @@ ensure_ppgcc_tables();
 $typeInput = (string)($_GET['tipo'] ?? 'noticias');
 $type = $typeInput === 'editais' ? 'edital' : 'informacao';
 $typeLabel = $type === 'edital' ? 'Editais da Pos' : 'Noticias da Pos';
+$sidebarActive = 'pos_publicacoes';
 
 $error = null;
 $success = null;
@@ -121,34 +122,7 @@ $items = $stmt->fetchAll() ?: [];
         </div>
     </nav>
 
-    <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
-        <div class="sidebar-brand">
-            <a href="/admin/dashboard.php" class="brand-link text-decoration-none"><span class="brand-text fw-light">Portal Admin</span></a>
-        </div>
-        <div class="sidebar-wrapper">
-            <nav class="mt-2">
-                <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu">
-                    <li class="nav-item"><a href="/admin/dashboard.php" class="nav-link"><p>Dashboard</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=noticias" class="nav-link"><p>Noticias</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=editais" class="nav-link"><p>Editais</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=defesas" class="nav-link"><p>Defesas</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=estagios" class="nav-link"><p>Estagios e Empregos</p></a></li>
-                    <li class="nav-item"><a href="/admin/pessoal.php" class="nav-link"><p>Pessoal</p></a></li>
-                    <li class="nav-item"><a href="/admin/atendimento-docentes.php" class="nav-link"><p>Atendimento Docentes</p></a></li>
-                    <li class="nav-item"><a href="/admin/menu.php" class="nav-link"><p>Menu Principal</p></a></li>
-                    <li class="nav-item"><a href="/admin/tema.php" class="nav-link"><p>Tema e Cores</p></a></li>
-                    <li class="nav-item"><a href="/admin/carousel.php" class="nav-link"><p>Carrossel Home</p></a></li>
-                    <li class="nav-item"><a href="/admin/horarios.php" class="nav-link"><p>Horarios de Aula</p></a></li>
-                    <li class="nav-item"><a href="/admin/pos-graduacao.php" class="nav-link"><p>Pos-graduacao</p></a></li>
-                    <li class="nav-item"><a href="/admin/pos-publicacoes.php?tipo=noticias" class="nav-link<?= $type === 'informacao' ? ' active' : '' ?>"><p>Noticias Pos</p></a></li>
-                    <li class="nav-item"><a href="/admin/pos-publicacoes.php?tipo=editais" class="nav-link<?= $type === 'edital' ? ' active' : '' ?>"><p>Editais Pos</p></a></li>
-                    <li class="nav-item"><a href="/admin/pos-subsite.php" class="nav-link"><p>Subsite Pos</p></a></li>
-                    <?php if (admin_can('manage_users')): ?><li class="nav-item"><a href="/admin/users.php" class="nav-link"><p>Usuarios e Permissoes</p></a></li><?php endif; ?>
-                    <li class="nav-item"><a href="/health.php" class="nav-link" target="_blank" rel="noopener"><p>Health</p></a></li>
-                </ul>
-            </nav>
-        </div>
-    </aside>
+    <?php render_admin_sidebar($sidebarActive); ?>
 
     <main class="app-main">
         <div class="app-content-header"><div class="container-fluid"><h3 class="mb-0">Gerenciar <?= e($typeLabel) ?></h3></div></div>

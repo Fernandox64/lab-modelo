@@ -1,12 +1,12 @@
 services:
   app:
     build: .
-    container_name: departamento-template-app
+    container_name: laboratorio-template-app
     depends_on:
       db:
         condition: service_healthy
     ports:
-      - "8090:80"
+      - "8092:80"
     environment:
       DB_HOST: db
       DB_PORT: 3306
@@ -19,7 +19,7 @@ services:
 
   db:
     image: mysql:8.0
-    container_name: departamento-template-db
+    container_name: laboratorio-template-db
     environment:
       MYSQL_DATABASE: newsdb
       MYSQL_USER: newsuser
@@ -29,7 +29,7 @@ services:
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
     ports:
-      - "3307:3306"
+      - "3308:3306"
     volumes:
       - db_data:/var/lib/mysql
       - ./mysql-init:/docker-entrypoint-initdb.d
@@ -43,7 +43,7 @@ services:
 
   phpmyadmin:
     image: phpmyadmin:5-apache
-    container_name: departamento-template-phpmyadmin
+    container_name: laboratorio-template-phpmyadmin
     depends_on:
       db:
         condition: service_healthy
@@ -53,7 +53,7 @@ services:
       PMA_USER: root
       PMA_PASSWORD: rootpass
     ports:
-      - "8081:80"
+      - "8082:80"
     restart: unless-stopped
 
 volumes:

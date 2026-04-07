@@ -1,7 +1,5 @@
 <?php
 header('Content-Type: text/html; charset=UTF-8');
-$menuGraduacao = primary_menu_item('graduacao');
-$menuPosGraduacao = primary_menu_item('pos_graduacao');
 $themeInlineCss = current_site_palette_inline_css();
 $topbarDepartmentName = trim(site_setting_get('topbar_department_name', 'Departamento Exemplo'));
 $topbarPhone = trim(site_setting_get('topbar_phone', SITE_PHONE));
@@ -26,8 +24,13 @@ if ($topbarEmail === '') {
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 <link href="/assets/css/theme.css" rel="stylesheet">
 <style><?= $themeInlineCss ?></style>
+<style>
+.skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+.skip-link:focus{left:1rem;top:1rem;width:auto;height:auto;z-index:2000;padding:.5rem .75rem;background:#111;color:#fff;border-radius:.5rem}
+</style>
 </head>
 <body>
+<a class="skip-link" href="#main-content">Skip to content</a>
 <div class="topbar py-2">
     <div class="container d-flex flex-wrap justify-content-between gap-2">
         <div class="topbar-brand-text">Universidade Federal de Ouro Preto | <?= e($topbarDepartmentName) ?></div>
@@ -53,73 +56,15 @@ if ($topbarEmail === '') {
 
         <div class="collapse navbar-collapse" id="navbarMain">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <li class="nav-item"><a class="nav-link" href="/">Inicio</a></li>
-
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Departamento</a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="/decom/quem-somos.php">Quem somos</a></li>
-                        <li><a class="dropdown-item" href="/decom/comunicacao-logo.php">Comunicacao e logo</a></li>
-                        <li><a class="dropdown-item" href="/decom/localizacao.php">Localizacao</a></li>
-                        <li><a class="dropdown-item" href="/decom/mapa-campus.php">Mapa do campus</a></li>
-                    </ul>
-                </li>
-
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Noticias e Eventos</a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="/noticias/index.php">Noticias</a></li>
-                        <li><a class="dropdown-item" href="/noticias/editais.php">Editais</a></li>
-                        <li><a class="dropdown-item" href="/noticias/defesas.php">Defesas</a></li>
-                        <li><a class="dropdown-item" href="/noticias/estagios-empregos.php">Estagios e Empregos</a></li>
-                    </ul>
-                </li>
-
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Pessoal</a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="/pessoal/docentes.php">Docentes</a></li>
-                        <li><a class="dropdown-item" href="/pessoal/funcionarios.php">Funcionarios</a></li>
-                        <li><a class="dropdown-item" href="/pessoal/atendimento-docentes.php">Atendimento Docentes</a></li>
-                    </ul>
-                </li>
-
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Ensino</a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="/ensino/ciencia-computacao.php">Curso de Graduacao 1</a></li>
-                        <li><a class="dropdown-item" href="/pos/inicio.php">Pos-graduacao (Subsite)</a></li>
-                        <li><a class="dropdown-item" href="/pos/noticias.php">Noticias da Pos</a></li>
-                        <li><a class="dropdown-item" href="/pos/editais.php">Editais da Pos</a></li>
-                        <li><a class="dropdown-item" href="/pos/processo-seletivo.php">Processo Seletivo</a></li>
-                        <li><a class="dropdown-item" href="/ensino/inteligencia-artificial.php">Curso de Graduacao 2</a></li>
-                        <li><a class="dropdown-item" href="/ensino/horarios-de-aula.php">Horarios de Aula</a></li>
-                        <li><a class="dropdown-item" href="/ensino/informacoes-uteis.php">Informacoes Uteis</a></li>
-                        <li><a class="dropdown-item" href="/ensino/monografias.php">Monografias</a></li>
-                    </ul>
-                </li>
-
-                <li class="nav-item"><a class="nav-link" href="<?= e((string)$menuGraduacao['url']) ?>"><?= e((string)$menuGraduacao['label']) ?></a></li>
-                <li class="nav-item"><a class="nav-link" href="<?= e((string)$menuPosGraduacao['url']) ?>"><?= e((string)$menuPosGraduacao['label']) ?></a></li>
-
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Pesquisa</a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="/pesquisa/index.php">Pesquisa</a></li>
-                        <li><a class="dropdown-item" href="/pesquisa/labs.php">Laboratorios</a></li>
-                        <li><a class="dropdown-item" href="/pesquisa/projetos.php">Projetos de Pesquisa/Extensao</a></li>
-                    </ul>
-                </li>
-
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Extensao</a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="/extensao/index.php">Extensao</a></li>
-                        <li><a class="dropdown-item" href="/pesquisa/projetos.php">Projetos de Pesquisa/Extensao</a></li>
-                    </ul>
-                </li>
-
-                <li class="nav-item"><a class="nav-link" href="/contato/index.php">Contato</a></li>
+                <li class="nav-item"><a class="nav-link" href="/">HOME</a></li>
+                <li class="nav-item"><a class="nav-link" href="/laboratorio/sobre.php">O LABORATORIO</a></li>
+                <li class="nav-item"><a class="nav-link" href="/laboratorio/equipe.php">Equipe</a></li>
+                <li class="nav-item"><a class="nav-link" href="/laboratorio/projetos.php">Projetos</a></li>
+                <li class="nav-item"><a class="nav-link" href="/laboratorio/publicacoes.php">Publicacoes</a></li>
+                <li class="nav-item"><a class="nav-link" href="/laboratorio/cursos.php">Cursos</a></li>
+                <li class="nav-item"><a class="nav-link" href="/laboratorio/parceiros.php">Parceiros</a></li>
+                <li class="nav-item"><a class="nav-link" href="/laboratorio/tutoriais.php">Tutoriais</a></li>
+                <li class="nav-item"><a class="nav-link" href="/laboratorio/blog.php">Blog</a></li>
             </ul>
 
             <div class="d-flex gap-2">

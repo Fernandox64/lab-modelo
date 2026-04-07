@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS people_items (
     id INT AUTO_INCREMENT PRIMARY KEY,
     slug VARCHAR(150) NOT NULL UNIQUE,
     role_type ENUM('docente','funcionario') NOT NULL DEFAULT 'docente',
+    scope ENUM('principal','pos') NOT NULL DEFAULT 'principal',
     name VARCHAR(180) NOT NULL,
     position VARCHAR(255) NOT NULL,
     degree TEXT DEFAULT NULL,

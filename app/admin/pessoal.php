@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../includes/config.php';
 
 require_admin_permission('manage_people');
+ensure_people_items_scope_column();
 
 function people_slugify(string $text): string {
     $text = mb_strtolower(trim($text), 'UTF-8');
@@ -13,12 +14,12 @@ function people_slugify(string $text): string {
     return $text !== '' ? substr($text, 0, 140) : 'pessoa-' . bin2hex(random_bytes(4));
 }
 
-function people_unique_slug(PDO $pdo, string $baseSlug, ?int $ignoreId = null): string {
+function people_unique_slug(PDO $pdo, string $baseSlug, string $scope, ?int $ignoreId = null): string {
     $slug = $baseSlug;
     $i = 1;
     while (true) {
-        $sql = 'SELECT id FROM people_items WHERE slug = :slug';
-        $params = [':slug' => $slug];
+        $sql = 'SELECT id FROM people_items WHERE slug = :slug AND scope = :scope';
+        $params = [':slug' => $slug, ':scope' => $scope];
         if ($ignoreId !== null) {
             $sql .= ' AND id <> :id';
             $params[':id'] = $ignoreId;
@@ -37,6 +38,10 @@ $pdo = db();
 $error = null;
 $success = null;
 $editing = null;
+$scope = people_scope_normalize((string)($_GET['scope'] ?? ($_POST['scope'] ?? 'principal')));
+$scopeLabel = people_scope_label($scope);
+$isPosScope = $scope === 'pos';
+$sidebarActive = $isPosScope ? 'pos_docentes' : 'pessoal';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!is_valid_csrf_token($_POST['csrf_token'] ?? null)) {
@@ -46,8 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 
         if ($action === 'delete' && $id > 0) {
-            $stmt = $pdo->prepare('DELETE FROM people_items WHERE id = :id');
-            $stmt->execute([':id' => $id]);
+            $stmt = $pdo->prepare('DELETE FROM people_items WHERE id = :id AND scope = :scope');
+            $stmt->execute([':id' => $id, ':scope' => $scope]);
             $success = 'Pessoa removida com sucesso.';
         }
 
@@ -75,18 +80,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Nome e cargo/filiacao sao obrigatorios.';
             } else {
                 $baseSlug = $slugInput !== '' ? people_slugify($slugInput) : people_slugify($name);
-                $slug = people_unique_slug($pdo, $baseSlug, $id > 0 ? $id : null);
+                $slug = people_unique_slug($pdo, $baseSlug, $scope, $id > 0 ? $id : null);
 
                 if ($id > 0) {
                     $stmt = $pdo->prepare(
                         'UPDATE people_items
-                         SET slug = :slug, role_type = :role_type, name = :name, position = :position, degree = :degree,
+                         SET slug = :slug, scope = :scope, role_type = :role_type, name = :name, position = :position, degree = :degree,
                              website_url = :website_url, lattes_url = :lattes_url, email = :email, phone = :phone, room = :room,
                              photo_url = :photo_url, interests = :interests, bio = :bio, sort_order = :sort_order
-                         WHERE id = :id'
+                         WHERE id = :id AND scope = :scope_where'
                     );
                     $stmt->execute([
                         ':slug' => $slug,
+                        ':scope' => $scope,
                         ':role_type' => $roleType,
                         ':name' => $name,
                         ':position' => $position,
@@ -101,15 +107,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ':bio' => $bio,
                         ':sort_order' => $sortOrder,
                         ':id' => $id,
+                        ':scope_where' => $scope,
                     ]);
                     $success = 'Cadastro atualizado com sucesso.';
                 } else {
                     $stmt = $pdo->prepare(
-                        'INSERT INTO people_items (slug, role_type, name, position, degree, website_url, lattes_url, email, phone, room, photo_url, interests, bio, sort_order)
-                         VALUES (:slug, :role_type, :name, :position, :degree, :website_url, :lattes_url, :email, :phone, :room, :photo_url, :interests, :bio, :sort_order)'
+                        'INSERT INTO people_items (slug, scope, role_type, name, position, degree, website_url, lattes_url, email, phone, room, photo_url, interests, bio, sort_order)
+                         VALUES (:slug, :scope, :role_type, :name, :position, :degree, :website_url, :lattes_url, :email, :phone, :room, :photo_url, :interests, :bio, :sort_order)'
                     );
                     $stmt->execute([
                         ':slug' => $slug,
+                        ':scope' => $scope,
                         ':role_type' => $roleType,
                         ':name' => $name,
                         ':position' => $position,
@@ -133,19 +141,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $editId = isset($_GET['edit']) ? (int)$_GET['edit'] : 0;
 if ($editId > 0) {
-    $stmt = $pdo->prepare('SELECT * FROM people_items WHERE id = :id');
-    $stmt->execute([':id' => $editId]);
+    $stmt = $pdo->prepare('SELECT * FROM people_items WHERE id = :id AND scope = :scope');
+    $stmt->execute([':id' => $editId, ':scope' => $scope]);
     $editing = $stmt->fetch();
 }
 
-$items = $pdo->query('SELECT id, slug, role_type, name, position, email, phone, photo_url, sort_order FROM people_items ORDER BY role_type ASC, sort_order ASC, name ASC')->fetchAll();
+$stmt = $pdo->prepare('SELECT id, slug, scope, role_type, name, position, email, phone, photo_url, sort_order FROM people_items WHERE scope = :scope ORDER BY role_type ASC, sort_order ASC, name ASC');
+$stmt->execute([':scope' => $scope]);
+$items = $stmt->fetchAll();
 ?>
 <!doctype html>
 <html lang="pt-BR">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Admin - Pessoal</title>
+    <title>Admin - Pessoal <?= e($scopeLabel) ?></title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-rc3/dist/css/adminlte.min.css">
 </head>
@@ -167,39 +177,12 @@ $items = $pdo->query('SELECT id, slug, role_type, name, position, email, phone, 
             </ul>
         </div>
     </nav>
-
-    <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
-        <div class="sidebar-brand">
-            <a href="/admin/dashboard.php" class="brand-link text-decoration-none"><span class="brand-text fw-light">Portal Admin</span></a>
-        </div>
-        <div class="sidebar-wrapper">
-            <nav class="mt-2">
-                <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu">
-                    <li class="nav-item"><a href="/admin/dashboard.php" class="nav-link"><p>Dashboard</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=noticias" class="nav-link"><p>Noticias</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=editais" class="nav-link"><p>Editais</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=defesas" class="nav-link"><p>Defesas</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=estagios" class="nav-link"><p>Estagios e Empregos</p></a></li>
-                    <li class="nav-item"><a href="/admin/pessoal.php" class="nav-link active"><p>Pessoal</p></a></li>
-                    <li class="nav-item"><a href="/admin/atendimento-docentes.php" class="nav-link"><p>Atendimento Docentes</p></a></li>
-                    <li class="nav-item"><a href="/admin/menu.php" class="nav-link"><p>Menu Principal</p></a></li>
-                    <li class="nav-item"><a href="/admin/tema.php" class="nav-link"><p>Tema e Cores</p></a></li>
-                    <li class="nav-item"><a href="/admin/carousel.php" class="nav-link"><p>Carrossel Home</p></a></li>
-                    <li class="nav-item"><a href="/admin/horarios.php" class="nav-link"><p>Horarios de Aula</p></a></li>
-                    <li class="nav-item"><a href="/admin/pos-graduacao.php" class="nav-link"><p>Pos-graduacao</p></a></li>
-                    <li class="nav-item"><a href="/admin/pos-publicacoes.php?tipo=noticias" class="nav-link"><p>Noticias/Editais Pos</p></a></li>
-                    <li class="nav-item"><a href="/admin/pos-subsite.php" class="nav-link"><p>Subsite Pos</p></a></li>
-                    <?php if (admin_can('manage_users')): ?><li class="nav-item"><a href="/admin/users.php" class="nav-link"><p>Usuarios e Permissoes</p></a></li><?php endif; ?>
-                    <li class="nav-item"><a href="/health.php" class="nav-link" target="_blank" rel="noopener"><p>Health</p></a></li>
-                </ul>
-            </nav>
-        </div>
-    </aside>
+    <?php render_admin_sidebar($sidebarActive); ?>
 
     <main class="app-main">
         <div class="app-content-header">
             <div class="container-fluid">
-                <h3 class="mb-0">Gerenciar Pessoal</h3>
+                <h3 class="mb-0">Gerenciar Pessoal - <?= e($scopeLabel) ?></h3>
             </div>
         </div>
         <div class="app-content">
@@ -213,6 +196,7 @@ $items = $pdo->query('SELECT id, slug, role_type, name, position, email, phone, 
                         <form method="post">
                             <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                             <input type="hidden" name="action" value="save">
+                            <input type="hidden" name="scope" value="<?= e($scope) ?>">
                             <input type="hidden" name="id" value="<?= e((string)($editing['id'] ?? '0')) ?>">
 
                             <div class="row g-3">
@@ -229,7 +213,7 @@ $items = $pdo->query('SELECT id, slug, role_type, name, position, email, phone, 
                                     </select>
                                 </div>
                                 <div class="col-md-8">
-                                    <label class="form-label">Cargo / FiliaÃƒÂ§ÃƒÂ£o</label>
+                                    <label class="form-label">Cargo / Filia&ccedil;&atilde;o</label>
                                     <input class="form-control" name="position" required value="<?= e((string)($editing['position'] ?? '')) ?>">
                                 </div>
                                 <div class="col-md-4">
@@ -281,19 +265,20 @@ $items = $pdo->query('SELECT id, slug, role_type, name, position, email, phone, 
 
                             <div class="d-flex gap-2 mt-3">
                                 <button class="btn btn-primary" type="submit"><?= $editing ? 'Salvar alteracoes' : 'Adicionar pessoa' ?></button>
-                                <?php if ($editing): ?><a class="btn btn-outline-secondary" href="/admin/pessoal.php">Cancelar</a><?php endif; ?>
+                                <?php if ($editing): ?><a class="btn btn-outline-secondary" href="/admin/pessoal.php?scope=<?= e($scope) ?>">Cancelar</a><?php endif; ?>
                             </div>
                         </form>
                     </div>
                 </div>
 
                 <div class="card">
-                    <div class="card-header"><h3 class="card-title">Cadastros (<?= e((string)count($items)) ?>)</h3></div>
+                    <div class="card-header"><h3 class="card-title">Cadastros de <?= e($scopeLabel) ?> (<?= e((string)count($items)) ?>)</h3></div>
                     <div class="card-body table-responsive">
                         <table class="table table-sm align-middle">
                             <thead>
                                 <tr>
                                     <th>ID</th>
+                                    <th>Escopo</th>
                                     <th>Tipo</th>
                                     <th>Nome</th>
                                     <th>Cargo</th>
@@ -306,16 +291,18 @@ $items = $pdo->query('SELECT id, slug, role_type, name, position, email, phone, 
                                 <?php foreach ($items as $row): ?>
                                     <tr>
                                         <td><?= e((string)$row['id']) ?></td>
+                                        <td><?= e(people_scope_label((string)$row['scope'])) ?></td>
                                         <td><?= e((string)$row['role_type']) ?></td>
                                         <td><?= e((string)$row['name']) ?></td>
                                         <td><?= e((string)$row['position']) ?></td>
                                         <td><?= e((string)($row['email'] ?: $row['phone'])) ?></td>
                                         <td><?= e((string)$row['sort_order']) ?></td>
                                         <td class="text-end">
-                                            <a class="btn btn-outline-primary btn-sm" href="/admin/pessoal.php?edit=<?= e((string)$row['id']) ?>">Editar</a>
+                                            <a class="btn btn-outline-primary btn-sm" href="/admin/pessoal.php?scope=<?= e($scope) ?>&edit=<?= e((string)$row['id']) ?>">Editar</a>
                                             <form method="post" class="d-inline">
                                                 <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                                                 <input type="hidden" name="action" value="delete">
+                                                <input type="hidden" name="scope" value="<?= e($scope) ?>">
                                                 <input type="hidden" name="id" value="<?= e((string)$row['id']) ?>">
                                                 <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Excluir este cadastro?');">Excluir</button>
                                             </form>

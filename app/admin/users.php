@@ -24,10 +24,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $role = admin_normalize_role((string)($_POST['role'] ?? 'editor'));
 
                 if ($name === '' || $email === '' || $password === '') {
-                    throw new RuntimeException('Nome, e-mail e senha sÃ£o obrigatÃ³rios.');
+                    throw new RuntimeException('Nome, e-mail e senha sÃƒÆ’Ã‚Â£o obrigatÃƒÆ’Ã‚Â³rios.');
                 }
                 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    throw new RuntimeException('Informe um e-mail vÃ¡lido.');
+                    throw new RuntimeException('Informe um e-mail vÃƒÆ’Ã‚Â¡lido.');
                 }
                 $passwordError = admin_validate_password_strength($password);
                 if ($passwordError !== null) {
@@ -56,13 +56,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $isActive = isset($_POST['is_active']) ? 1 : 0;
 
                 if ($id <= 0 || $name === '' || $email === '') {
-                    throw new RuntimeException('Dados invÃ¡lidos para atualizaÃ§Ã£o.');
+                    throw new RuntimeException('Dados invÃƒÆ’Ã‚Â¡lidos para atualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o.');
                 }
                 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    throw new RuntimeException('Informe um e-mail vÃ¡lido.');
+                    throw new RuntimeException('Informe um e-mail vÃƒÆ’Ã‚Â¡lido.');
                 }
                 if ((int)$current['id'] === $id && $isActive !== 1) {
-                    throw new RuntimeException('VocÃª nÃ£o pode desativar sua prÃ³pria conta.');
+                    throw new RuntimeException('VocÃƒÆ’Ã‚Âª nÃƒÆ’Ã‚Â£o pode desativar sua prÃƒÆ’Ã‚Â³pria conta.');
                 }
 
                 $stmt = db()->prepare(
@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id = (int)($_POST['id'] ?? 0);
                 $newPassword = (string)($_POST['new_password'] ?? '');
                 if ($id <= 0) {
-                    throw new RuntimeException('Conta invÃ¡lida para redefiniÃ§Ã£o de senha.');
+                    throw new RuntimeException('Conta invÃƒÆ’Ã‚Â¡lida para redefiniÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de senha.');
                 }
                 $passwordError = admin_validate_password_strength($newPassword);
                 if ($passwordError !== null) {
@@ -118,7 +118,7 @@ $users = db()->query(
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Admin - UsuÃ¡rios</title>
+    <title>Admin - UsuÃƒÆ’Ã‚Â¡rios</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-rc3/dist/css/adminlte.min.css">
 </head>
@@ -140,39 +140,12 @@ $users = db()->query(
             </ul>
         </div>
     </nav>
-
-    <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
-        <div class="sidebar-brand">
-            <a href="/admin/dashboard.php" class="brand-link text-decoration-none"><span class="brand-text fw-light">Portal Admin</span></a>
-        </div>
-        <div class="sidebar-wrapper">
-            <nav class="mt-2">
-                <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu">
-                    <li class="nav-item"><a href="/admin/dashboard.php" class="nav-link"><p>Dashboard</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=noticias" class="nav-link"><p>Noticias</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=editais" class="nav-link"><p>Editais</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=defesas" class="nav-link"><p>Defesas</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=estagios" class="nav-link"><p>Estagios e Empregos</p></a></li>
-                    <li class="nav-item"><a href="/admin/pessoal.php" class="nav-link"><p>Pessoal</p></a></li>
-                    <li class="nav-item"><a href="/admin/atendimento-docentes.php" class="nav-link"><p>Atendimento Docentes</p></a></li>
-                    <li class="nav-item"><a href="/admin/menu.php" class="nav-link"><p>Menu Principal</p></a></li>
-                    <li class="nav-item"><a href="/admin/tema.php" class="nav-link"><p>Tema e Cores</p></a></li>
-                    <li class="nav-item"><a href="/admin/carousel.php" class="nav-link"><p>Carrossel Home</p></a></li>
-                    <li class="nav-item"><a href="/admin/horarios.php" class="nav-link"><p>Horarios de Aula</p></a></li>
-                    <li class="nav-item"><a href="/admin/pos-graduacao.php" class="nav-link"><p>Pos-graduacao</p></a></li>
-                    <li class="nav-item"><a href="/admin/pos-publicacoes.php?tipo=noticias" class="nav-link"><p>Noticias/Editais Pos</p></a></li>
-                    <li class="nav-item"><a href="/admin/pos-subsite.php" class="nav-link"><p>Subsite Pos</p></a></li>
-                    <li class="nav-item"><a href="/admin/users.php" class="nav-link active"><p>UsuÃ¡rios e PermissÃµes</p></a></li>
-                    <li class="nav-item"><a href="/health.php" class="nav-link" target="_blank" rel="noopener"><p>Health</p></a></li>
-                </ul>
-            </nav>
-        </div>
-    </aside>
+    <?php render_admin_sidebar('users'); ?>
 
     <main class="app-main">
         <div class="app-content-header">
             <div class="container-fluid">
-                <h3 class="mb-0">Gerenciar UsuÃ¡rios e PermissÃµes</h3>
+                <h3 class="mb-0">Gerenciar UsuÃƒÆ’Ã‚Â¡rios e PermissÃƒÆ’Ã‚Âµes</h3>
             </div>
         </div>
         <div class="app-content">
@@ -224,9 +197,9 @@ $users = db()->query(
                                 <th>E-mail</th>
                                 <th>Perfil</th>
                                 <th>Status</th>
-                                <th>Ãšltimo login</th>
+                                <th>ÃƒÆ’Ã…Â¡ltimo login</th>
                                 <th>Criado em</th>
-                                <th class="text-end">AÃ§Ãµes</th>
+                                <th class="text-end">AÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -258,7 +231,7 @@ $users = db()->query(
                                                 <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                                                 <input type="hidden" name="action" value="update">
                                                 <input type="hidden" name="id" value="<?= e((string)$u['id']) ?>">
-                                                <div class="modal-header"><h5 class="modal-title">Editar usuÃ¡rio</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                                                <div class="modal-header"><h5 class="modal-title">Editar usuÃƒÆ’Ã‚Â¡rio</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                                                 <div class="modal-body">
                                                     <div class="mb-2">
                                                         <label class="form-label">Nome</label>

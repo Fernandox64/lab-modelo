@@ -4,6 +4,10 @@ declare(strict_types=1);
 require_once __DIR__ . '/../includes/config.php';
 
 require_admin_permission('manage_atendimento');
+$scope = people_scope_normalize((string)($_GET['scope'] ?? ($_POST['scope'] ?? 'principal')));
+$scopeLabel = people_scope_label($scope);
+$sidebarActive = $scope === 'pos' ? 'pos_atendimento' : 'atendimento_docentes';
+$publicPageUrl = $scope === 'pos' ? '/pos/atendimento-docentes.php' : '/pessoal/atendimento-docentes.php';
 
 $error = null;
 $success = null;
@@ -15,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = (string)($_POST['action'] ?? 'save');
         try {
             if ($action === 'seed_people') {
-                atendimento_docentes_seed_from_people();
+                atendimento_docentes_seed_from_people($scope);
                 $success = 'Tabela preenchida automaticamente com docentes cadastrados.';
             } else {
                 atendimento_docentes_save([
@@ -25,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'table_html' => (string)($_POST['table_html'] ?? ''),
                     'notes_html' => (string)($_POST['notes_html'] ?? ''),
                     'source_url' => (string)($_POST['source_url'] ?? ''),
-                ]);
+                ], $scope);
                 $success = 'Horarios de atendimento salvos com sucesso.';
             }
         } catch (Throwable $e) {
@@ -35,14 +39,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$data = atendimento_docentes_get();
+$data = atendimento_docentes_get($scope);
 ?>
 <!doctype html>
 <html lang="pt-BR">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Admin - Atendimento Docentes</title>
+    <title>Admin - Atendimento Docentes <?= e($scopeLabel) ?></title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-rc3/dist/css/adminlte.min.css">
     <script src="https://cdn.jsdelivr.net/npm/tinymce@7.9.1/tinymce.min.js" referrerpolicy="origin"></script>
@@ -65,41 +69,14 @@ $data = atendimento_docentes_get();
             </ul>
         </div>
     </nav>
-
-    <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
-        <div class="sidebar-brand">
-            <a href="/admin/dashboard.php" class="brand-link text-decoration-none"><span class="brand-text fw-light">Portal Admin</span></a>
-        </div>
-        <div class="sidebar-wrapper">
-            <nav class="mt-2">
-                <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu">
-                    <li class="nav-item"><a href="/admin/dashboard.php" class="nav-link"><p>Dashboard</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=noticias" class="nav-link"><p>Noticias</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=editais" class="nav-link"><p>Editais</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=defesas" class="nav-link"><p>Defesas</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=estagios" class="nav-link"><p>Estagios e Empregos</p></a></li>
-                    <li class="nav-item"><a href="/admin/pessoal.php" class="nav-link"><p>Pessoal</p></a></li>
-                    <li class="nav-item"><a href="/admin/atendimento-docentes.php" class="nav-link active"><p>Atendimento Docentes</p></a></li>
-                    <li class="nav-item"><a href="/admin/menu.php" class="nav-link"><p>Menu Principal</p></a></li>
-                    <li class="nav-item"><a href="/admin/tema.php" class="nav-link"><p>Tema e Cores</p></a></li>
-                    <li class="nav-item"><a href="/admin/carousel.php" class="nav-link"><p>Carrossel Home</p></a></li>
-                    <li class="nav-item"><a href="/admin/horarios.php" class="nav-link"><p>Horarios de Aula</p></a></li>
-                    <li class="nav-item"><a href="/admin/pos-graduacao.php" class="nav-link"><p>Pos-graduacao</p></a></li>
-                    <li class="nav-item"><a href="/admin/pos-publicacoes.php?tipo=noticias" class="nav-link"><p>Noticias/Editais Pos</p></a></li>
-                    <li class="nav-item"><a href="/admin/pos-subsite.php" class="nav-link"><p>Subsite Pos</p></a></li>
-                    <?php if (admin_can('manage_users')): ?><li class="nav-item"><a href="/admin/users.php" class="nav-link"><p>Usuarios e Permissoes</p></a></li><?php endif; ?>
-                    <li class="nav-item"><a href="/health.php" class="nav-link" target="_blank" rel="noopener"><p>Health</p></a></li>
-                </ul>
-            </nav>
-        </div>
-    </aside>
+    <?php render_admin_sidebar($sidebarActive); ?>
 
     <main class="app-main">
         <div class="app-content-header">
             <div class="container-fluid">
                 <div class="d-flex justify-content-between align-items-center">
-                    <h3 class="mb-0">Horarios de Atendimento dos Docentes</h3>
-                    <a class="btn btn-dark btn-sm" href="/pessoal/atendimento-docentes.php" target="_blank" rel="noopener">Ver pagina publica</a>
+                    <h3 class="mb-0">Horarios de Atendimento dos Docentes - <?= e($scopeLabel) ?></h3>
+                    <a class="btn btn-dark btn-sm" href="<?= e($publicPageUrl) ?>" target="_blank" rel="noopener">Ver pagina publica</a>
                 </div>
             </div>
         </div>
@@ -114,6 +91,7 @@ $data = atendimento_docentes_get();
                         <form method="post">
                             <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                             <input type="hidden" name="action" value="seed_people">
+                            <input type="hidden" name="scope" value="<?= e($scope) ?>">
                             <button class="btn btn-outline-primary" type="submit">Gerar tabela com docentes cadastrados</button>
                         </form>
                     </div>
@@ -125,6 +103,7 @@ $data = atendimento_docentes_get();
                         <form method="post">
                             <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                             <input type="hidden" name="action" value="save">
+                            <input type="hidden" name="scope" value="<?= e($scope) ?>">
                             <div class="row g-3">
                                 <div class="col-md-8"><label class="form-label">Titulo</label><input class="form-control" name="title" value="<?= e((string)$data['title']) ?>"></div>
                                 <div class="col-md-4"><label class="form-label">URL de referencia</label><input class="form-control" name="source_url" value="<?= e((string)$data['source_url']) ?>"></div>

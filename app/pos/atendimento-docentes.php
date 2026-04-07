@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../includes/config.php';
 
-$data = atendimento_docentes_get('principal');
+$data = atendimento_docentes_get('pos');
 page_header((string)$data['title']);
 ?>
 <style>
@@ -12,6 +12,11 @@ page_header((string)$data['title']);
 .atendimento-docentes table tbody td:first-child{background:#f8fafc;font-weight:700}
 </style>
 <div class="container py-4">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a class="btn btn-outline-secondary btn-sm" href="/pos/inicio.php">Voltar ao subsite da Pos</a>
+        <a class="btn btn-outline-primary btn-sm" href="/pos/docentes.php">Docentes da Pos</a>
+    </div>
+
     <h1 class="section-title h3 mb-3"><?= e((string)$data['title']) ?></h1>
     <p class="lead mb-4"><?= e((string)$data['summary']) ?></p>
 

@@ -92,34 +92,7 @@ $graduates = $selectedYear > 0 ? ppgcc_graduates_by_year($selectedYear) : [];
             </ul>
         </div>
     </nav>
-
-    <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
-        <div class="sidebar-brand">
-            <a href="/admin/dashboard.php" class="brand-link text-decoration-none"><span class="brand-text fw-light">Portal Admin</span></a>
-        </div>
-        <div class="sidebar-wrapper">
-            <nav class="mt-2">
-                <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu">
-                    <li class="nav-item"><a href="/admin/dashboard.php" class="nav-link"><p>Dashboard</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=noticias" class="nav-link"><p>Noticias</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=editais" class="nav-link"><p>Editais</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=defesas" class="nav-link"><p>Defesas</p></a></li>
-                    <li class="nav-item"><a href="/admin/content.php?type=estagios" class="nav-link"><p>Estagios e Empregos</p></a></li>
-                    <li class="nav-item"><a href="/admin/pessoal.php" class="nav-link"><p>Pessoal</p></a></li>
-                    <li class="nav-item"><a href="/admin/atendimento-docentes.php" class="nav-link"><p>Atendimento Docentes</p></a></li>
-                    <li class="nav-item"><a href="/admin/menu.php" class="nav-link"><p>Menu Principal</p></a></li>
-                    <li class="nav-item"><a href="/admin/tema.php" class="nav-link"><p>Tema e Cores</p></a></li>
-                    <li class="nav-item"><a href="/admin/carousel.php" class="nav-link"><p>Carrossel Home</p></a></li>
-                    <li class="nav-item"><a href="/admin/horarios.php" class="nav-link"><p>Horarios de Aula</p></a></li>
-                    <li class="nav-item"><a href="/admin/pos-graduacao.php" class="nav-link active"><p>Pos-graduacao</p></a></li>
-                    <li class="nav-item"><a href="/admin/pos-publicacoes.php?tipo=noticias" class="nav-link"><p>Noticias/Editais Pos</p></a></li>
-                    <li class="nav-item"><a href="/admin/pos-subsite.php" class="nav-link"><p>Subsite Pos</p></a></li>
-                    <?php if (admin_can('manage_users')): ?><li class="nav-item"><a href="/admin/users.php" class="nav-link"><p>Usuarios e Permissoes</p></a></li><?php endif; ?>
-                    <li class="nav-item"><a href="/health.php" class="nav-link" target="_blank" rel="noopener"><p>Health</p></a></li>
-                </ul>
-            </nav>
-        </div>
-    </aside>
+    <?php render_admin_sidebar('pos_graduacao'); ?>
 
     <main class="app-main">
         <div class="app-content-header"><div class="container-fluid"><h3 class="mb-0">Gerenciar Pos-graduacao</h3></div></div>
@@ -152,6 +125,9 @@ $graduates = $selectedYear > 0 ? ppgcc_graduates_by_year($selectedYear) : [];
                     <p class="mb-2">Noticias e editais da pos sao gerenciados em modulo separado.</p>
                     <a class="btn btn-primary btn-sm" href="/admin/pos-publicacoes.php?tipo=noticias">Gerenciar Noticias da Pos</a>
                     <a class="btn btn-danger btn-sm ms-2" href="/admin/pos-publicacoes.php?tipo=editais">Gerenciar Editais da Pos</a>
+                    <a class="btn btn-outline-dark btn-sm ms-2" href="/admin/pos-secoes.php">Gerenciar Pesquisa e Extensao</a>
+                    <a class="btn btn-outline-primary btn-sm ms-2" href="/admin/pessoal.php?scope=pos">Gerenciar Docentes da Pos</a>
+                    <a class="btn btn-outline-secondary btn-sm ms-2" href="/admin/atendimento-docentes.php?scope=pos">Gerenciar Atendimento da Pos</a>
                 </div>
             </div>
 

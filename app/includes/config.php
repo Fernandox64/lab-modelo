@@ -33,6 +33,11 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     ]);
     session_start();
 }
+if (PHP_SAPI !== 'cli' && !headers_sent() && ob_get_level() === 0) {
+    ob_start(function (string $buffer): string {
+        return fix_mojibake_ptbr($buffer);
+    });
+}
 
 const SITE_NAME = 'Departamento Modelo';
 const SITE_SIGLA = 'DEP';
@@ -60,7 +65,7 @@ function db(): PDO {
     ]);
     return $pdo;
 }
-function e($v): string { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+function e($v): string { return htmlspecialchars(fix_mojibake_ptbr((string)$v), ENT_QUOTES, 'UTF-8'); }
 function sanitize_rich_text(string $html): string {
     $allowed = '<p><br><strong><b><em><i><u><ul><ol><li><a><h2><h3><h4><blockquote><img><table><thead><tbody><tr><td><th><hr>';
     $clean = strip_tags($html, $allowed);
@@ -722,8 +727,18 @@ function horarios_import_from_legacy(?string $sourceUrl = null): array {
     site_setting_set('horarios_last_sync', date('Y-m-d H:i:s'));
     return ['ok' => true, 'count' => count($items), 'message' => 'Links importados com sucesso.'];
 }
-function atendimento_docentes_generate_table_html(): string {
-    $docentes = docentes();
+function people_scope_normalize(string $scope): string {
+    $scope = trim(mb_strtolower($scope, 'UTF-8'));
+    return $scope === 'pos' ? 'pos' : 'principal';
+}
+function people_scope_label(string $scope): string {
+    return people_scope_normalize($scope) === 'pos' ? 'Pos-graduacao' : 'Principal';
+}
+function people_scope_setting_prefix(string $scope): string {
+    return people_scope_normalize($scope) === 'pos' ? 'pos_' : '';
+}
+function atendimento_docentes_generate_table_html(string $scope = 'principal'): string {
+    $docentes = docentes($scope);
     if (empty($docentes)) {
         $docentes = [
             ['name' => 'Docente 1', 'room' => 'Sala COM01'],
@@ -754,55 +769,63 @@ function atendimento_docentes_generate_table_html(): string {
     $table .= '</tbody></table></div>';
     return $table;
 }
-function atendimento_docentes_default_data(): array {
+function atendimento_docentes_default_data(string $scope = 'principal'): array {
+    $scopeNorm = people_scope_normalize($scope);
+    $scopeLabel = $scopeNorm === 'pos' ? 'da Pos-graduacao' : 'do Departamento';
+    $sourceDefault = $scopeNorm === 'pos'
+        ? '/pos/inicio.php'
+        : 'https://www3.decom.ufop.br/decom/pessoal/planos_trabalho_publico/';
     return [
-        'title' => 'Horarios de Atendimento dos Docentes',
-        'summary' => 'Tabela semanal de atendimento aos alunos por professor do departamento.',
+        'title' => 'Horarios de Atendimento dos Docentes ' . $scopeLabel,
+        'summary' => 'Tabela semanal de atendimento aos alunos por professor ' . mb_strtolower($scopeLabel, 'UTF-8') . '.',
         'intro_html' => '<p>Consulte os horarios de atendimento docente abaixo. Esta pagina e atualizada pela secretaria via painel admin.</p>',
-        'table_html' => atendimento_docentes_generate_table_html(),
+        'table_html' => atendimento_docentes_generate_table_html($scopeNorm),
         'notes_html' => '<p><small>Referencia institucional: planos de trabalho e atendimento publicados pelo departamento.</small></p>',
-        'source_url' => 'https://www3.decom.ufop.br/decom/pessoal/planos_trabalho_publico/',
+        'source_url' => $sourceDefault,
         'last_sync' => '',
     ];
 }
-function atendimento_docentes_get(): array {
-    $d = atendimento_docentes_default_data();
+function atendimento_docentes_get(string $scope = 'principal'): array {
+    $d = atendimento_docentes_default_data($scope);
+    $prefix = people_scope_setting_prefix($scope);
     return [
-        'title' => trim(site_setting_get('atendimento_docentes_title', $d['title'])),
-        'summary' => trim(site_setting_get('atendimento_docentes_summary', $d['summary'])),
-        'intro_html' => site_setting_get('atendimento_docentes_intro_html', $d['intro_html']),
-        'table_html' => site_setting_get('atendimento_docentes_table_html', $d['table_html']),
-        'notes_html' => site_setting_get('atendimento_docentes_notes_html', $d['notes_html']),
-        'source_url' => trim(site_setting_get('atendimento_docentes_source_url', $d['source_url'])),
-        'last_sync' => trim(site_setting_get('atendimento_docentes_last_sync', $d['last_sync'])),
+        'title' => trim(site_setting_get($prefix . 'atendimento_docentes_title', $d['title'])),
+        'summary' => trim(site_setting_get($prefix . 'atendimento_docentes_summary', $d['summary'])),
+        'intro_html' => site_setting_get($prefix . 'atendimento_docentes_intro_html', $d['intro_html']),
+        'table_html' => site_setting_get($prefix . 'atendimento_docentes_table_html', $d['table_html']),
+        'notes_html' => site_setting_get($prefix . 'atendimento_docentes_notes_html', $d['notes_html']),
+        'source_url' => trim(site_setting_get($prefix . 'atendimento_docentes_source_url', $d['source_url'])),
+        'last_sync' => trim(site_setting_get($prefix . 'atendimento_docentes_last_sync', $d['last_sync'])),
     ];
 }
-function atendimento_docentes_save(array $data): void {
-    $d = atendimento_docentes_default_data();
+function atendimento_docentes_save(array $data, string $scope = 'principal'): void {
+    $d = atendimento_docentes_default_data($scope);
+    $prefix = people_scope_setting_prefix($scope);
     $title = trim((string)($data['title'] ?? $d['title']));
     $summary = trim((string)($data['summary'] ?? $d['summary']));
     $intro = sanitize_rich_text((string)($data['intro_html'] ?? $d['intro_html']));
     $table = sanitize_rich_text((string)($data['table_html'] ?? $d['table_html']));
     $notes = sanitize_rich_text((string)($data['notes_html'] ?? $d['notes_html']));
     $source = trim((string)($data['source_url'] ?? $d['source_url']));
-    site_setting_set('atendimento_docentes_title', $title !== '' ? $title : $d['title']);
-    site_setting_set('atendimento_docentes_summary', $summary !== '' ? $summary : $d['summary']);
-    site_setting_set('atendimento_docentes_intro_html', $intro);
-    site_setting_set('atendimento_docentes_table_html', $table);
-    site_setting_set('atendimento_docentes_notes_html', $notes);
-    site_setting_set('atendimento_docentes_source_url', $source !== '' ? $source : $d['source_url']);
+    site_setting_set($prefix . 'atendimento_docentes_title', $title !== '' ? $title : $d['title']);
+    site_setting_set($prefix . 'atendimento_docentes_summary', $summary !== '' ? $summary : $d['summary']);
+    site_setting_set($prefix . 'atendimento_docentes_intro_html', $intro);
+    site_setting_set($prefix . 'atendimento_docentes_table_html', $table);
+    site_setting_set($prefix . 'atendimento_docentes_notes_html', $notes);
+    site_setting_set($prefix . 'atendimento_docentes_source_url', $source !== '' ? $source : $d['source_url']);
 }
-function atendimento_docentes_seed_from_people(): void {
-    $current = atendimento_docentes_get();
+function atendimento_docentes_seed_from_people(string $scope = 'principal'): void {
+    $prefix = people_scope_setting_prefix($scope);
+    $current = atendimento_docentes_get($scope);
     atendimento_docentes_save([
         'title' => $current['title'],
         'summary' => $current['summary'],
         'intro_html' => $current['intro_html'],
-        'table_html' => atendimento_docentes_generate_table_html(),
+        'table_html' => atendimento_docentes_generate_table_html($scope),
         'notes_html' => $current['notes_html'],
         'source_url' => $current['source_url'],
-    ]);
-    site_setting_set('atendimento_docentes_last_sync', date('Y-m-d H:i:s'));
+    ], $scope);
+    site_setting_set($prefix . 'atendimento_docentes_last_sync', date('Y-m-d H:i:s'));
 }
 function normalize_menu_url(string $url, string $fallback): string {
     $url = trim($url);
@@ -814,15 +837,45 @@ function normalize_menu_url(string $url, string $fallback): string {
     }
     return '/' . ltrim($url, '/');
 }
+function fix_mojibake_ptbr(string $text): string {
+    if ($text === '' || (strpos($text, 'Ã') === false && strpos($text, 'Â') === false)) {
+        return $text;
+    }
+    $map = [
+        'Ã¡' => 'á', 'Ãà' => 'à', 'Ã¢' => 'â', 'Ãã' => 'ã', 'Ãä' => 'ä',
+        'Ãé' => 'é', 'Ãè' => 'è', 'Ãê' => 'ê', 'Ãë' => 'ë',
+        'Ãí' => 'í', 'Ãì' => 'ì', 'Ãî' => 'î', 'Ãï' => 'ï',
+        'Ãó' => 'ó', 'Ãò' => 'ò', 'Ãô' => 'ô', 'Ãõ' => 'õ', 'Ãö' => 'ö',
+        'Ãú' => 'ú', 'Ãù' => 'ù', 'Ãû' => 'û', 'Ãü' => 'ü',
+        'Ãç' => 'ç', 'Ãñ' => 'ñ',
+        'ÃÁ' => 'Á', 'ÃÀ' => 'À', 'ÃÂ' => 'Â', 'ÃÃ' => 'Ã', 'ÃÄ' => 'Ä',
+        'ÃÉ' => 'É', 'ÃÈ' => 'È', 'ÃÊ' => 'Ê', 'ÃË' => 'Ë',
+        'ÃÍ' => 'Í', 'ÃÌ' => 'Ì', 'ÃÎ' => 'Î', 'ÃÏ' => 'Ï',
+        'ÃÓ' => 'Ó', 'ÃÒ' => 'Ò', 'ÃÔ' => 'Ô', 'ÃÕ' => 'Õ', 'ÃÖ' => 'Ö',
+        'ÃÚ' => 'Ú', 'ÃÙ' => 'Ù', 'ÃÛ' => 'Û', 'ÃÜ' => 'Ü',
+        'ÃÇ' => 'Ç', 'ÃÑ' => 'Ñ',
+        'Âº' => 'º', 'Âª' => 'ª', 'Â°' => '°',
+        'â€“' => '–', 'â€”' => '—', 'â€˜' => '‘', 'â€™' => '’', 'â€œ' => '“', 'â€' => '”',
+        'â€¦' => '…', 'â€¢' => '•',
+        'ÃƒÂ¡' => 'á', 'ÃƒÂ£' => 'ã', 'ÃƒÂ§' => 'ç', 'ÃƒÂ©' => 'é', 'ÃƒÂª' => 'ê', 'ÃƒÂ³' => 'ó', 'ÃƒÂµ' => 'õ', 'ÃƒÂº' => 'ú',
+        'ÃƒÆ’Ã‚Â¡' => 'á', 'ÃƒÆ’Ã‚Â£' => 'ã', 'ÃƒÆ’Ã‚Â§' => 'ç', 'ÃƒÆ’Ã‚Â©' => 'é', 'ÃƒÆ’Ã‚Âª' => 'ê', 'ÃƒÆ’Ã‚Â³' => 'ó', 'ÃƒÆ’Ã‚Âµ' => 'õ', 'ÃƒÆ’Ã‚Âº' => 'ú',
+    ];
+    $fixed = strtr($text, $map);
+    if (strpos($fixed, 'Ã') === false && strpos($fixed, 'Â') === false) {
+        return $fixed;
+    }
+    $decoded = @iconv('ISO-8859-1', 'UTF-8//IGNORE', $fixed);
+    return (is_string($decoded) && $decoded !== '') ? $decoded : $fixed;
+}
 function primary_menu_item(string $slot): array {
     $defaults = [
         'graduacao' => ['label' => 'Graduacao', 'url' => '/ensino/ciencia-computacao.php'],
-        'pos_graduacao' => ['label' => 'PÃ³s-graduaÃ§Ã£o', 'url' => '/ensino/pos-graduacao.php'],
+        'pos_graduacao' => ['label' => 'Pós-graduação', 'url' => '/ensino/pos-graduacao.php'],
     ];
     $default = $defaults[$slot] ?? ['label' => 'Menu', 'url' => '/'];
-    $label = trim(site_setting_get('menu_' . $slot . '_label', $default['label']));
-    if ($slot === 'pos_graduacao' && $label === 'Pos-graduacao') {
-        $label = 'PÃ³s-graduaÃ§Ã£o';
+    $label = trim(fix_mojibake_ptbr(site_setting_get('menu_' . $slot . '_label', $default['label'])));
+    if ($slot === 'pos_graduacao' && ($label === 'Pos-graduacao' || $label === 'PÃ³s-graduaÃ§Ã£o' || $label === 'PÃƒÂ³s-graduaÃƒÂ§ÃƒÂ£o')) {
+        $label = 'Pós-graduação';
     }
     $url = normalize_menu_url(site_setting_get('menu_' . $slot . '_url', $default['url']), $default['url']);
     return [
@@ -876,13 +929,13 @@ function ufop_holidays_for_year(int $year): array {
 }
 function ufop_month_pt_to_number(string $month): int {
     $m = strtolower(trim($month));
-    $m = strtr($m, ['Ã§' => 'c', 'Ã£' => 'a', 'Ã¡' => 'a', 'Ã¢' => 'a', 'Ã©' => 'e']);
+    $m = strtr($m, ['ÃƒÂ§' => 'c', 'ÃƒÂ£' => 'a', 'ÃƒÂ¡' => 'a', 'ÃƒÂ¢' => 'a', 'ÃƒÂ©' => 'e']);
     $map = [
         'janeiro' => 1,
         'fevereiro' => 2,
         'marco' => 3,
         'marco.' => 3,
-        'marÃ§o' => 3,
+        'marÃƒÂ§o' => 3,
         'abril' => 4,
         'maio' => 5,
         'junho' => 6,
@@ -929,6 +982,46 @@ function ufop_fetch_current_calendar_events(int $year, int $month): array {
     }
     return $eventsByDay;
 }
+function student_calendar_source_url(): string {
+    $default = 'https://www.prograd.ufop.br/calendario-academico';
+    $url = trim(site_setting_get('student_calendar_source_url', $default));
+    if ($url === '' || preg_match('~^https?://~i', $url) !== 1) {
+        return $default;
+    }
+    return $url;
+}
+function student_calendar_show_holidays(): bool {
+    return site_setting_get('student_calendar_show_holidays', '1') !== '0';
+}
+function student_calendar_manual_events_for_month(int $year, int $month): array {
+    $raw = trim(site_setting_get('student_calendar_manual_events', ''));
+    if ($raw === '') {
+        return [];
+    }
+    $out = [];
+    $lines = preg_split("/(\r\n|\n|\r)/", $raw) ?: [];
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || str_starts_with($line, '#')) {
+            continue;
+        }
+        if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})\s*\|\s*(.+)$/', $line, $m)) {
+            continue;
+        }
+        $y = (int)$m[1];
+        $mo = (int)$m[2];
+        $d = (int)$m[3];
+        if ($y !== $year || $mo !== $month || $d < 1 || $d > 31) {
+            continue;
+        }
+        $title = trim((string)$m[4]);
+        if ($title === '') {
+            continue;
+        }
+        $out[$d][] = ['type' => 'event', 'title' => $title, 'source' => 'Departamento (manual)'];
+    }
+    return $out;
+}
 function ufop_student_calendar(int $year = 0, int $month = 0): array {
     $now = new DateTimeImmutable('now');
     $year = $year > 0 ? $year : (int)$now->format('Y');
@@ -942,8 +1035,10 @@ function ufop_student_calendar(int $year = 0, int $month = 0): array {
     $daysInMonth = (int)$first->format('t');
     $firstDow = (int)$first->format('w'); // 0=dom ... 6=sab
 
-    $holidays = ufop_holidays_for_year($year);
+    $showHolidays = student_calendar_show_holidays();
+    $holidays = $showHolidays ? ufop_holidays_for_year($year) : [];
     $events = ufop_fetch_current_calendar_events($year, $month);
+    $manualEvents = student_calendar_manual_events_for_month($year, $month);
     $dayMap = [];
     for ($d = 1; $d <= $daysInMonth; $d++) {
         $ymd = sprintf('%04d-%02d-%02d', $year, $month, $d);
@@ -952,6 +1047,9 @@ function ufop_student_calendar(int $year = 0, int $month = 0): array {
             $dayMap[$d][] = ['type' => 'holiday', 'title' => $holidays[$ymd], 'source' => 'Calendario oficial'];
         }
         foreach (($events[$d] ?? []) as $ev) {
+            $dayMap[$d][] = $ev;
+        }
+        foreach (($manualEvents[$d] ?? []) as $ev) {
             $dayMap[$d][] = $ev;
         }
     }
@@ -965,7 +1063,7 @@ function ufop_student_calendar(int $year = 0, int $month = 0): array {
         'first_dow' => $firstDow,
         'weekdays' => ['d', 's', 't', 'q', 'q', 's', 's'],
         'days' => $dayMap,
-        'source_url' => 'https://www.prograd.ufop.br/calendario-academico',
+        'source_url' => student_calendar_source_url(),
         'source_label' => 'Calendario oficial UFOP (PROGRAD)',
     ];
 }
@@ -1041,6 +1139,43 @@ function ensure_ppgcc_tables(): void {
     } catch (Throwable $e) {
         error_log('Failed ensuring post-graduation tables: ' . $e->getMessage());
     }
+}
+function ppgcc_section_defaults(string $section): array {
+    $slug = $section === 'extensao' ? 'extensao' : 'pesquisa';
+    if ($slug === 'extensao') {
+        return [
+            'title' => 'Extensao da Pos-graduacao',
+            'summary' => 'Projetos, acoes e programas de extensao vinculados a pos-graduacao.',
+            'content_html' => '<p>Cadastre aqui os projetos, editais, oficinas e acoes de extensao da pos-graduacao.</p>',
+        ];
+    }
+    return [
+        'title' => 'Pesquisa da Pos-graduacao',
+        'summary' => 'Linhas, grupos e projetos de pesquisa da pos-graduacao.',
+        'content_html' => '<p>Cadastre aqui as linhas de pesquisa, laboratorios e projetos ativos da pos-graduacao.</p>',
+    ];
+}
+function ppgcc_section_get(string $section): array {
+    $slug = $section === 'extensao' ? 'extensao' : 'pesquisa';
+    $defaults = ppgcc_section_defaults($slug);
+    $prefix = 'ppgcc_section_' . $slug . '_';
+    return [
+        'section' => $slug,
+        'title' => trim(site_setting_get($prefix . 'title', $defaults['title'])),
+        'summary' => trim(site_setting_get($prefix . 'summary', $defaults['summary'])),
+        'content_html' => site_setting_get($prefix . 'content_html', $defaults['content_html']),
+    ];
+}
+function ppgcc_section_save(string $section, array $data): void {
+    $slug = $section === 'extensao' ? 'extensao' : 'pesquisa';
+    $defaults = ppgcc_section_defaults($slug);
+    $prefix = 'ppgcc_section_' . $slug . '_';
+    $title = trim((string)($data['title'] ?? $defaults['title']));
+    $summary = trim((string)($data['summary'] ?? $defaults['summary']));
+    $contentHtml = sanitize_rich_text((string)($data['content_html'] ?? $defaults['content_html']));
+    site_setting_set($prefix . 'title', $title !== '' ? $title : $defaults['title']);
+    site_setting_set($prefix . 'summary', $summary !== '' ? $summary : $defaults['summary']);
+    site_setting_set($prefix . 'content_html', $contentHtml !== '' ? $contentHtml : $defaults['content_html']);
 }
 function simple_slugify(string $text): string {
     $text = mb_strtolower(trim($text), 'UTF-8');
@@ -1835,6 +1970,72 @@ function require_admin_permission(string $permission): void {
     echo '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Acesso negado</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"></head><body class="bg-light"><main class="container py-5"><div class="alert alert-danger"><h1 class="h4 mb-2">Acesso negado</h1><p class="mb-0">Sua conta nao possui permissao para acessar este modulo.</p></div><div class="d-flex gap-2"><a class="btn btn-primary" href="/admin/dashboard.php">Voltar ao painel</a><a class="btn btn-outline-secondary" href="/">Voltar ao site</a></div></main></body></html>';
     exit;
 }
+function render_admin_sidebar(string $active = 'dashboard'): void {
+    $is = static fn(string $key): bool => $active === $key;
+    $in = static fn(array $keys): bool => in_array($active, $keys, true);
+    $grpContent = ['content_noticias', 'content_editais', 'content_defesas', 'content_estagios'];
+    $grpHome = ['carousel', 'tema', 'menu'];
+    $grpAcademic = ['pessoal', 'atendimento_docentes', 'horarios'];
+    $grpPos = ['pos_graduacao', 'pos_publicacoes', 'pos_subsite', 'pos_sections', 'pos_docentes', 'pos_atendimento'];
+    ?>
+    <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
+        <div class="sidebar-brand">
+            <a href="/admin/dashboard.php" class="brand-link text-decoration-none"><span class="brand-text fw-light">Portal Admin</span></a>
+        </div>
+        <div class="sidebar-wrapper">
+            <nav class="mt-2">
+                <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu">
+                    <li class="nav-item"><a href="/admin/dashboard.php" class="nav-link<?= $is('dashboard') ? ' active' : '' ?>"><p>Dashboard</p></a></li>
+
+                    <li class="nav-item<?= $in($grpContent) ? ' menu-open' : '' ?>">
+                        <a href="#" class="nav-link<?= $in($grpContent) ? ' active' : '' ?>"><p>Conteudo <i class="nav-arrow"></i></p></a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item"><a href="/admin/content.php?type=noticias" class="nav-link<?= $is('content_noticias') ? ' active' : '' ?>"><p>Noticias</p></a></li>
+                            <li class="nav-item"><a href="/admin/content.php?type=editais" class="nav-link<?= $is('content_editais') ? ' active' : '' ?>"><p>Editais</p></a></li>
+                            <li class="nav-item"><a href="/admin/content.php?type=defesas" class="nav-link<?= $is('content_defesas') ? ' active' : '' ?>"><p>Defesas</p></a></li>
+                            <li class="nav-item"><a href="/admin/content.php?type=estagios" class="nav-link<?= $is('content_estagios') ? ' active' : '' ?>"><p>Estagios e Empregos</p></a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item<?= $in($grpHome) ? ' menu-open' : '' ?>">
+                        <a href="#" class="nav-link<?= $in($grpHome) ? ' active' : '' ?>"><p>Home e Visual <i class="nav-arrow"></i></p></a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item"><a href="/admin/carousel.php" class="nav-link<?= $is('carousel') ? ' active' : '' ?>"><p>Carrossel Home</p></a></li>
+                            <li class="nav-item"><a href="/admin/tema.php" class="nav-link<?= $is('tema') ? ' active' : '' ?>"><p>Tema e Cores</p></a></li>
+                            <li class="nav-item"><a href="/admin/menu.php" class="nav-link<?= $is('menu') ? ' active' : '' ?>"><p>Menu Principal</p></a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item<?= $in($grpAcademic) ? ' menu-open' : '' ?>">
+                        <a href="#" class="nav-link<?= $in($grpAcademic) ? ' active' : '' ?>"><p>Academico <i class="nav-arrow"></i></p></a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item"><a href="/admin/pessoal.php" class="nav-link<?= $is('pessoal') ? ' active' : '' ?>"><p>Pessoal</p></a></li>
+                            <li class="nav-item"><a href="/admin/atendimento-docentes.php" class="nav-link<?= $is('atendimento_docentes') ? ' active' : '' ?>"><p>Atendimento Docentes</p></a></li>
+                            <li class="nav-item"><a href="/admin/horarios.php" class="nav-link<?= $is('horarios') ? ' active' : '' ?>"><p>Horarios de Aula</p></a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item<?= $in($grpPos) ? ' menu-open' : '' ?>">
+                        <a href="#" class="nav-link<?= $in($grpPos) ? ' active' : '' ?>"><p>Pos-graduacao <i class="nav-arrow"></i></p></a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item"><a href="/admin/pos-graduacao.php" class="nav-link<?= $is('pos_graduacao') ? ' active' : '' ?>"><p>Pagina principal</p></a></li>
+                            <li class="nav-item"><a href="/admin/pos-publicacoes.php?tipo=noticias" class="nav-link<?= $is('pos_publicacoes') ? ' active' : '' ?>"><p>Noticias/Editais</p></a></li>
+                            <li class="nav-item"><a href="/admin/pos-secoes.php" class="nav-link<?= $is('pos_sections') ? ' active' : '' ?>"><p>Pesquisa e Extensao</p></a></li>
+                            <li class="nav-item"><a href="/admin/pessoal.php?scope=pos" class="nav-link<?= $is('pos_docentes') ? ' active' : '' ?>"><p>Docentes da Pos</p></a></li>
+                            <li class="nav-item"><a href="/admin/atendimento-docentes.php?scope=pos" class="nav-link<?= $is('pos_atendimento') ? ' active' : '' ?>"><p>Atendimento da Pos</p></a></li>
+                            <li class="nav-item"><a href="/admin/pos-subsite.php" class="nav-link<?= $is('pos_subsite') ? ' active' : '' ?>"><p>Subsite Pos</p></a></li>
+                        </ul>
+                    </li>
+
+                    <?php if (admin_can('manage_users')): ?>
+                        <li class="nav-item"><a href="/admin/users.php" class="nav-link<?= $is('users') ? ' active' : '' ?>"><p>Usuarios e Permissoes</p></a></li>
+                    <?php endif; ?>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+    <?php
+}
 function csrf_token(): string {
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -1979,7 +2180,7 @@ function demo_defesas(): array {
         error_log('Failed loading defesa_items: ' . $e->getMessage());
     }
     return [
-      ['slug'=>'defesas-monografia-2026-1','title'=>'Defesas de monografia 2026/1','summary'=>'Agenda de bancas de monografia do semestre.','category'=>'Defesas','content'=>'ConteÃƒÂºdo demonstrativo para defesas.','image'=>'/assets/cards/noticia-pesquisa.svg']
+      ['slug'=>'defesas-monografia-2026-1','title'=>'Defesas de monografia 2026/1','summary'=>'Agenda de bancas de monografia do semestre.','category'=>'Defesas','content'=>'ConteÃƒÆ’Ã‚Âºdo demonstrativo para defesas.','image'=>'/assets/cards/noticia-pesquisa.svg']
     ];
 }
 function demo_jobs(): array {
@@ -1992,7 +2193,7 @@ function demo_jobs(): array {
         error_log('Failed loading job_items: ' . $e->getMessage());
     }
     return [
-      ['slug'=>'vaga-estagio-web','title'=>'Vaga de estÃƒÂ¡gio em desenvolvimento web','summary'=>'Empresa parceira busca estudante com noÃƒÂ§ÃƒÂµes de PHP e banco de dados.','category'=>'Carreiras','content'=>'ConteÃƒÂºdo demonstrativo para estÃƒÂ¡gios e empregos.','image'=>'/assets/cards/noticia-portal.svg']
+      ['slug'=>'vaga-estagio-web','title'=>'Vaga de estÃƒÆ’Ã‚Â¡gio em desenvolvimento web','summary'=>'Empresa parceira busca estudante com noÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de PHP e banco de dados.','category'=>'Carreiras','content'=>'ConteÃƒÆ’Ã‚Âºdo demonstrativo para estÃƒÆ’Ã‚Â¡gios e empregos.','image'=>'/assets/cards/noticia-portal.svg']
     ];
 }
 function find_demo_item(string $slug): ?array {
@@ -2026,16 +2227,30 @@ function content_image(array $item): string {
     }
     return card_image_for_slug((string)($item['slug'] ?? ''));
 }
-function fetch_people_items(string $type): array {
+function ensure_people_items_scope_column(): void {
+    static $ready = false;
+    if ($ready) {
+        return;
+    }
+    $ready = true;
+    try {
+        db()->exec("ALTER TABLE people_items ADD COLUMN scope ENUM('principal','pos') NOT NULL DEFAULT 'principal' AFTER role_type");
+    } catch (Throwable $e) {
+        // Coluna ja existente ou banco ainda sem a tabela.
+    }
+}
+function fetch_people_items(string $type, string $scope = 'principal'): array {
     if (!in_array($type, ['docente', 'funcionario'], true)) {
         return [];
     }
+    $scopeNorm = people_scope_normalize($scope);
+    ensure_people_items_scope_column();
     $sql = "SELECT slug, name, role_type, position, degree, website_url, lattes_url, email, phone, room, interests, bio, photo_url
             FROM people_items
-            WHERE role_type = :role_type
+            WHERE role_type = :role_type AND scope = :scope
             ORDER BY sort_order ASC, name ASC, id ASC";
     $stmt = db()->prepare($sql);
-    $stmt->execute([':role_type' => $type]);
+    $stmt->execute([':role_type' => $type, ':scope' => $scopeNorm]);
     return $stmt->fetchAll();
 }
 function person_initials(string $name): string {
@@ -2078,9 +2293,9 @@ function person_photo_url(array $item): string {
     }
     return person_photo_placeholder((string)($item['name'] ?? SITE_SIGLA));
 }
-function docentes(): array {
+function docentes(string $scope = 'principal'): array {
     try {
-        $items = fetch_people_items('docente');
+        $items = fetch_people_items('docente', $scope);
         if (!empty($items)) {
             return $items;
         }
@@ -2088,14 +2303,14 @@ function docentes(): array {
         error_log('Failed loading docente profiles: ' . $e->getMessage());
     }
     return [
-        ['name'=>'Ana Paula Ribeiro','position'=>'Professora Adjunta','degree'=>'Doutora em CiÃƒÂªncia da ComputaÃƒÂ§ÃƒÂ£o','website_url'=>'','lattes_url'=>'','email'=>'ana.ribeiro@ufop.edu.br','phone'=>'(31) 3559-1601','room'=>'Instituto de CiÃƒÂªncias Exatas e BiolÃƒÂ³gicas','interests'=>'Engenharia de software e sistemas distribuÃƒÂ­dos.','bio'=>'Atua em engenharia de software e sistemas distribuÃƒÂ­dos.','photo_url'=>''],
-        ['name'=>'Bruno Carvalho Mendes','position'=>'Professor Associado','degree'=>'Doutor em CiÃƒÂªncia da ComputaÃƒÂ§ÃƒÂ£o','website_url'=>'','lattes_url'=>'','email'=>'bruno.mendes@ufop.edu.br','phone'=>'(31) 3559-1602','room'=>'Instituto de CiÃƒÂªncias Exatas e BiolÃƒÂ³gicas','interests'=>'InteligÃƒÂªncia artificial e mineraÃƒÂ§ÃƒÂ£o de dados.','bio'=>'Atua em inteligÃƒÂªncia artificial e mineraÃƒÂ§ÃƒÂ£o de dados.','photo_url'=>''],
-        ['name'=>'Camila Freitas Lopes','position'=>'Professora Adjunta','degree'=>'Doutora em ComputaÃƒÂ§ÃƒÂ£o','website_url'=>'','lattes_url'=>'','email'=>'camila.lopes@ufop.edu.br','phone'=>'(31) 3559-1603','room'=>'Instituto de CiÃƒÂªncias Exatas e BiolÃƒÂ³gicas','interests'=>'ComputaÃƒÂ§ÃƒÂ£o grÃƒÂ¡fica e IHC.','bio'=>'Atua em computaÃƒÂ§ÃƒÂ£o grÃƒÂ¡fica e interaÃƒÂ§ÃƒÂ£o humano-computador.','photo_url'=>''],
+        ['name'=>'Ana Paula Ribeiro','position'=>'Professora Adjunta','degree'=>'Doutora em CiÃƒÆ’Ã‚Âªncia da ComputaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o','website_url'=>'','lattes_url'=>'','email'=>'ana.ribeiro@ufop.edu.br','phone'=>'(31) 3559-1601','room'=>'Instituto de CiÃƒÆ’Ã‚Âªncias Exatas e BiolÃƒÆ’Ã‚Â³gicas','interests'=>'Engenharia de software e sistemas distribuÃƒÆ’Ã‚Â­dos.','bio'=>'Atua em engenharia de software e sistemas distribuÃƒÆ’Ã‚Â­dos.','photo_url'=>''],
+        ['name'=>'Bruno Carvalho Mendes','position'=>'Professor Associado','degree'=>'Doutor em CiÃƒÆ’Ã‚Âªncia da ComputaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o','website_url'=>'','lattes_url'=>'','email'=>'bruno.mendes@ufop.edu.br','phone'=>'(31) 3559-1602','room'=>'Instituto de CiÃƒÆ’Ã‚Âªncias Exatas e BiolÃƒÆ’Ã‚Â³gicas','interests'=>'InteligÃƒÆ’Ã‚Âªncia artificial e mineraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de dados.','bio'=>'Atua em inteligÃƒÆ’Ã‚Âªncia artificial e mineraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de dados.','photo_url'=>''],
+        ['name'=>'Camila Freitas Lopes','position'=>'Professora Adjunta','degree'=>'Doutora em ComputaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o','website_url'=>'','lattes_url'=>'','email'=>'camila.lopes@ufop.edu.br','phone'=>'(31) 3559-1603','room'=>'Instituto de CiÃƒÆ’Ã‚Âªncias Exatas e BiolÃƒÆ’Ã‚Â³gicas','interests'=>'ComputaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o grÃƒÆ’Ã‚Â¡fica e IHC.','bio'=>'Atua em computaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o grÃƒÆ’Ã‚Â¡fica e interaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o humano-computador.','photo_url'=>''],
     ];
 }
-function funcionarios(): array {
+function funcionarios(string $scope = 'principal'): array {
     try {
-        $items = fetch_people_items('funcionario');
+        $items = fetch_people_items('funcionario', $scope);
         if (!empty($items)) {
             return $items;
         }
@@ -2103,8 +2318,8 @@ function funcionarios(): array {
         error_log('Failed loading funcionario profiles: ' . $e->getMessage());
     }
     return [
-        ['name'=>'Mariana Souza Almeida','position'=>'SecretÃƒÂ¡ria Administrativa','degree'=>'','website_url'=>'','lattes_url'=>'','email'=>'mariana.almeida@ufop.edu.br','phone'=>'(31) 3559-1692','room'=>'Instituto de CiÃƒÂªncias Exatas e BiolÃƒÂ³gicas','interests'=>'Atendimento acadÃƒÂªmico e administrativo.','bio'=>'Atendimento acadÃƒÂªmico e administrativo do departamento.','photo_url'=>''],
-        ['name'=>'Paulo Henrique Silva','position'=>'TÃƒÂ©cnico em TI','degree'=>'','website_url'=>'','lattes_url'=>'','email'=>'paulo.silva@ufop.edu.br','phone'=>'(31) 3559-1693','room'=>'Instituto de CiÃƒÂªncias Exatas e BiolÃƒÂ³gicas','interests'=>'Infraestrutura e suporte de laboratÃƒÂ³rios.','bio'=>'Suporte de laboratÃƒÂ³rios, sistemas e infraestrutura local.','photo_url'=>''],
+        ['name'=>'Mariana Souza Almeida','position'=>'SecretÃƒÆ’Ã‚Â¡ria Administrativa','degree'=>'','website_url'=>'','lattes_url'=>'','email'=>'mariana.almeida@ufop.edu.br','phone'=>'(31) 3559-1692','room'=>'Instituto de CiÃƒÆ’Ã‚Âªncias Exatas e BiolÃƒÆ’Ã‚Â³gicas','interests'=>'Atendimento acadÃƒÆ’Ã‚Âªmico e administrativo.','bio'=>'Atendimento acadÃƒÆ’Ã‚Âªmico e administrativo do departamento.','photo_url'=>''],
+        ['name'=>'Paulo Henrique Silva','position'=>'TÃƒÆ’Ã‚Â©cnico em TI','degree'=>'','website_url'=>'','lattes_url'=>'','email'=>'paulo.silva@ufop.edu.br','phone'=>'(31) 3559-1693','room'=>'Instituto de CiÃƒÆ’Ã‚Âªncias Exatas e BiolÃƒÆ’Ã‚Â³gicas','interests'=>'Infraestrutura e suporte de laboratÃƒÆ’Ã‚Â³rios.','bio'=>'Suporte de laboratÃƒÆ’Ã‚Â³rios, sistemas e infraestrutura local.','photo_url'=>''],
     ];
 }
 function fetch_research_labs(): array {
@@ -2176,18 +2391,19 @@ function course_data(string $slug): array {
 function page_data(string $slug): array {
     $pages = [
       'quem-somos'=>['title'=>'Quem somos','summary'=>'Apresentacao institucional do departamento, sua trajetoria e suas areas de atuacao.','content'=>'Este departamento atua em ensino, pesquisa e extensao, oferecendo cursos e desenvolvendo acoes academicas para a comunidade.'],
-      'comunicacao-logo'=>['title'=>'ComunicaÃƒÂ§ÃƒÂ£o e logo','summary'=>'Diretrizes para uso do nome, identidade visual e materiais institucionais.','content'=>'Esta pÃƒÂ¡gina pode concentrar versÃƒÂµes do logotipo e padrÃƒÂµes de comunicaÃƒÂ§ÃƒÂ£o institucional do departamento.'],
-      'localizacao'=>['title'=>'LocalizaÃƒÂ§ÃƒÂ£o','summary'=>'InformaÃƒÂ§ÃƒÂµes de localizaÃƒÂ§ÃƒÂ£o fÃƒÂ­sica, acesso e referÃƒÂªncia institucional.','content'=>'O departamento estÃƒÂ¡ localizado no campus universitÃƒÂ¡rio, com atendimento presencial em dias ÃƒÂºteis.'],
-      'mapa-campus'=>['title'=>'Mapa do campus','summary'=>'Mapa de acesso e referÃƒÂªncia espacial da unidade acadÃƒÂªmica.','content'=>'PÃƒÂ¡gina preparada para receber mapa interativo ou orientaÃƒÂ§ÃƒÂµes de deslocamento.'],
-      'horarios-de-aula'=>['title'=>'HorÃƒÂ¡rios de Aula','summary'=>'Consulta organizada dos horÃƒÂ¡rios de aula por curso, perÃƒÂ­odo ou turma.','content'=>'Esta pÃƒÂ¡gina concentra quadros de horÃƒÂ¡rios dos alunos, horÃƒÂ¡rios por docente ou planilhas por semestre letivo.'],
-      'informacoes-uteis'=>['title'=>'InformaÃƒÂ§ÃƒÂµes ÃƒÅ¡teis','summary'=>'OrientaÃƒÂ§ÃƒÂµes acadÃƒÂªmicas, formulÃƒÂ¡rios e instruÃƒÂ§ÃƒÂµes operacionais para estudantes.','content'=>'Inclua aqui calendÃƒÂ¡rios, orientaÃƒÂ§ÃƒÂµes de matrÃƒÂ­cula, aproveitamento de estudos, equivalÃƒÂªncias e monitorias.'],
-      'monografias'=>['title'=>'Monografias','summary'=>'InformaÃƒÂ§ÃƒÂµes sobre disciplinas de monografia, banca, documentaÃƒÂ§ÃƒÂ£o e cronogramas.','content'=>'Esta pÃƒÂ¡gina centraliza regulamentos, modelos de documentos, agendas de defesas e orientaÃƒÂ§ÃƒÂµes para discentes e orientadores.'],
-      'pesquisa'=>['title'=>'Pesquisa','summary'=>'ApresentaÃƒÂ§ÃƒÂ£o de linhas de pesquisa, grupos, projetos e produÃƒÂ§ÃƒÂ£o cientÃƒÂ­fica.','content'=>'Esta seÃƒÂ§ÃƒÂ£o organiza laboratÃƒÂ³rios, grupos de pesquisa, projetos financiados e oportunidades de iniciaÃƒÂ§ÃƒÂ£o cientÃƒÂ­fica.'],
-      'extensao'=>['title'=>'ExtensÃƒÂ£o','summary'=>'CatÃƒÂ¡logo de projetos e aÃƒÂ§ÃƒÂµes de extensÃƒÂ£o vinculados ao departamento.','content'=>'Esta seÃƒÂ§ÃƒÂ£o apresenta programas, projetos, oficinas, cursos e aÃƒÂ§ÃƒÂµes extensionistas.'],
+      'comunicacao-logo'=>['title'=>'ComunicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o e logo','summary'=>'Diretrizes para uso do nome, identidade visual e materiais institucionais.','content'=>'Esta pÃƒÆ’Ã‚Â¡gina pode concentrar versÃƒÆ’Ã‚Âµes do logotipo e padrÃƒÆ’Ã‚Âµes de comunicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o institucional do departamento.'],
+      'localizacao'=>['title'=>'LocalizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o','summary'=>'InformaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de localizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o fÃƒÆ’Ã‚Â­sica, acesso e referÃƒÆ’Ã‚Âªncia institucional.','content'=>'O departamento estÃƒÆ’Ã‚Â¡ localizado no campus universitÃƒÆ’Ã‚Â¡rio, com atendimento presencial em dias ÃƒÆ’Ã‚Âºteis.'],
+      'mapa-campus'=>['title'=>'Mapa do campus','summary'=>'Mapa de acesso e referÃƒÆ’Ã‚Âªncia espacial da unidade acadÃƒÆ’Ã‚Âªmica.','content'=>'PÃƒÆ’Ã‚Â¡gina preparada para receber mapa interativo ou orientaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de deslocamento.'],
+      'horarios-de-aula'=>['title'=>'HorÃƒÆ’Ã‚Â¡rios de Aula','summary'=>'Consulta organizada dos horÃƒÆ’Ã‚Â¡rios de aula por curso, perÃƒÆ’Ã‚Â­odo ou turma.','content'=>'Esta pÃƒÆ’Ã‚Â¡gina concentra quadros de horÃƒÆ’Ã‚Â¡rios dos alunos, horÃƒÆ’Ã‚Â¡rios por docente ou planilhas por semestre letivo.'],
+      'informacoes-uteis'=>['title'=>'InformaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes ÃƒÆ’Ã…Â¡teis','summary'=>'OrientaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes acadÃƒÆ’Ã‚Âªmicas, formulÃƒÆ’Ã‚Â¡rios e instruÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes operacionais para estudantes.','content'=>'Inclua aqui calendÃƒÆ’Ã‚Â¡rios, orientaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de matrÃƒÆ’Ã‚Â­cula, aproveitamento de estudos, equivalÃƒÆ’Ã‚Âªncias e monitorias.'],
+      'monografias'=>['title'=>'Monografias','summary'=>'InformaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes sobre disciplinas de monografia, banca, documentaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o e cronogramas.','content'=>'Esta pÃƒÆ’Ã‚Â¡gina centraliza regulamentos, modelos de documentos, agendas de defesas e orientaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes para discentes e orientadores.'],
+      'pesquisa'=>['title'=>'Pesquisa','summary'=>'ApresentaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de linhas de pesquisa, grupos, projetos e produÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o cientÃƒÆ’Ã‚Â­fica.','content'=>'Esta seÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o organiza laboratÃƒÆ’Ã‚Â³rios, grupos de pesquisa, projetos financiados e oportunidades de iniciaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o cientÃƒÆ’Ã‚Â­fica.'],
+      'extensao'=>['title'=>'ExtensÃƒÆ’Ã‚Â£o','summary'=>'CatÃƒÆ’Ã‚Â¡logo de projetos e aÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes de extensÃƒÆ’Ã‚Â£o vinculados ao departamento.','content'=>'Esta seÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o apresenta programas, projetos, oficinas, cursos e aÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes extensionistas.'],
       'cocic'=>['title'=>'Graduacao','summary'=>'Pagina da graduacao com apresentacao do curso, estrutura academica e informacoes uteis para alunos.','content'=>'A graduacao pode publicar aqui informacoes sobre matriz curricular, orientacoes academicas, documentos, calendario e comunicados aos estudantes.'],
     ];
-    return $pages[$slug] ?? ['title'=>'PÃƒÂ¡gina','summary'=>'','content'=>''];
+    return $pages[$slug] ?? ['title'=>'PÃƒÆ’Ã‚Â¡gina','summary'=>'','content'=>''];
 }
+
 
 
 

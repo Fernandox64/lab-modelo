@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         body.login-page {
             background-image:
                 linear-gradient(rgba(17, 31, 162, 0.62), rgba(17, 31, 162, 0.62)),
-                url('/assets/images/login-bg-tech.jpg');
+                url('/assets/images/login-bg-ufop-2.png');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;

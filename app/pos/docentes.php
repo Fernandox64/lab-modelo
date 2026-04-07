@@ -1,8 +1,8 @@
 <?php
 require __DIR__ . '/../includes/config.php';
 
-$items = docentes('principal');
-page_header('Docentes');
+$items = docentes('pos');
+page_header('Docentes da Pos-graduacao');
 ?>
 <style>
 .doc-card{border:0;border-radius:16px;overflow:hidden;box-shadow:0 14px 30px rgba(16,42,67,.12);transition:transform .2s ease,box-shadow .2s ease;background:#fff}
@@ -16,23 +16,24 @@ page_header('Docentes');
 .doc-actions .btn-outline-secondary{border-color:#c5d2df;color:#334e68}
 </style>
 <div class="container py-4">
-    <h1 class="section-title h3 mb-4">Docentes</h1>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a class="btn btn-outline-secondary btn-sm" href="/pos/inicio.php">Voltar ao subsite da Pos</a>
+        <a class="btn btn-outline-primary btn-sm" href="/pos/atendimento-docentes.php">Atendimento da Pos</a>
+    </div>
+
+    <h1 class="section-title h3 mb-4">Docentes da Pos-graduacao</h1>
     <div class="row g-3">
         <?php foreach ($items as $item): ?>
             <div class="col-md-6">
                 <div class="card doc-card h-100">
                     <?php $photoHref = !empty($item['lattes_url']) ? (string)$item['lattes_url'] : '#'; ?>
                     <a class="doc-photo-wrap<?= $photoHref === '#' ? ' pe-none' : '' ?>" href="<?= e($photoHref) ?>" target="_blank" rel="noopener" title="Abrir curriculo lattes">
-                        <img
-                            class="doc-photo"
-                            src="<?= e(person_photo_url($item)) ?>"
-                            alt="<?= e($item['name'] ?? 'Docente') ?>"
-                        >
+                        <img class="doc-photo" src="<?= e(person_photo_url($item)) ?>" alt="<?= e($item['name'] ?? 'Docente') ?>">
                     </a>
                     <div class="card-body">
                         <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
                             <h2 class="h5 mb-0"><?= e($item['name'] ?? '') ?></h2>
-                            <span class="doc-chip">Docente</span>
+                            <span class="doc-chip">Docente da Pos</span>
                         </div>
                         <p class="mb-2 text-muted"><?= e($item['position'] ?? '') ?></p>
 
@@ -65,6 +66,9 @@ page_header('Docentes');
                 </div>
             </div>
         <?php endforeach; ?>
+        <?php if (empty($items)): ?>
+            <div class="col-12"><div class="alert alert-warning mb-0">Nenhum docente da pos-graduacao cadastrado.</div></div>
+        <?php endif; ?>
     </div>
 </div>
 <?php page_footer(); ?>
