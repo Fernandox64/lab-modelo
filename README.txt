@@ -1,24 +1,21 @@
-﻿VERSÃƒO ESTÃVEL PARA DOCKER LOCAL
+VERSAO ESTAVEL PARA DOCKER LOCAL
 
-Esta versÃ£o evita a dependÃªncia das tabelas complexas que causaram falha.
-Ela sobe com:
-- pÃ¡ginas institucionais funcionando
-- menu completo
-- conteÃºdo demonstrativo estÃ¡tico
-- teste real de conexÃ£o com MySQL em /health.php
+URLs locais:
+- http://localhost:8092
+- http://localhost:8092/health.php
+- http://localhost:8092/admin/login.php
+- http://localhost:8082
 
-Como subir:
-docker compose down -v
-docker compose up -d --build
+Credenciais de exemplo (Admin):
+- superadmin@departamento.local / Super@2026!
+- editor@departamento.local / Editor@2026!
+- secretaria@departamento.local / Secretaria@2026!
+- admin@example.com / SuperAdmin@2026
 
-Acessos:
-- http://localhost:8090
-- http://localhost:8090/health.php
-- http://localhost:8090/admin/login.php
-- http://localhost:8081
-
-Credenciais:
-- Admin: admin@example.com / Admin@123456
-- MySQL: newsuser / newspass
+Credenciais de exemplo (Banco):
+- MySQL: newsuser / newspass (porta 3308)
 - Root: rootpass
 
+Como subir:
+- docker compose down -v
+- docker compose up -d --build
