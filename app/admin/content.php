@@ -164,6 +164,7 @@ $items = $itemsStmt->fetchAll();
             <ul class="navbar-nav">
                 <li class="nav-item"><a class="nav-link" data-lte-toggle="sidebar" href="#" role="button">Menu</a></li>
                 <li class="nav-item d-none d-md-block"><a href="/admin/dashboard.php" class="nav-link">Dashboard</a></li>
+                <li class="nav-item d-none d-md-block"><a href="/" class="nav-link" target="_blank" rel="noopener">Ir para o site</a></li>
             </ul>
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
@@ -303,7 +304,7 @@ tinymce.init({
   paste_webkit_styles: 'none',
   paste_merge_formats: true,
   paste_preprocess: function (plugin, args) {
-    // Limpa marcas comuns do Word/Docs mantendo estrutura semÃƒÆ’Ã‚Â¢ntica.
+    // Limpa marcas comuns do Word/Docs mantendo estrutura semÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ntica.
     args.content = args.content
       .replace(/<!--[\s\S]*?-->/g, '')
       .replace(/\sclass=("|\')[^"\']*("|\')/gi, '')

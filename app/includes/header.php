@@ -13,6 +13,8 @@ if ($topbarPhone === '') {
 if ($topbarEmail === '') {
     $topbarEmail = SITE_EMAIL;
 }
+$ufopLogoUrl = header_ufop_logo_url();
+$departmentLogo = header_department_logo();
 ?>
 <!doctype html>
 <html lang="pt-BR">
@@ -27,6 +29,10 @@ if ($topbarEmail === '') {
 <style>
 .skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
 .skip-link:focus{left:1rem;top:1rem;width:auto;height:auto;z-index:2000;padding:.5rem .75rem;background:#111;color:#fff;border-radius:.5rem}
+.header-logo-wrap{display:flex;align-items:center;gap:.6rem}
+.ufop-navbar-logo{height:54px;width:auto;border-radius:6px;display:block}
+.lab-navbar-logo{height:50px;max-width:190px;width:auto;display:block;object-fit:contain}
+.ufop-brand-text{font-size:1.02rem;font-weight:700;letter-spacing:.01em}
 </style>
 </head>
 <body>
@@ -40,9 +46,16 @@ if ($topbarEmail === '') {
 
 <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom sticky-top">
     <div class="container">
-        <a class="navbar-brand d-flex align-items-center fw-semibold" href="/" title="<?= e(SITE_NAME) ?>">
-            <?= e(SITE_SIGLA) ?>
-        </a>
+        <div class="navbar-brand d-flex align-items-center fw-semibold p-0 m-0">
+            <a href="/" title="<?= e(SITE_NAME) ?>" class="d-inline-flex align-items-center text-decoration-none">
+            <span class="header-logo-wrap">
+                <img src="<?= e($ufopLogoUrl) ?>" class="ufop-navbar-logo" alt="UFOP">
+            </span>
+            </a>
+            <a href="<?= e((string)$departmentLogo['link']) ?>" title="<?= e((string)$departmentLogo['alt']) ?>" class="d-inline-flex align-items-center text-decoration-none ms-2">
+                <img src="<?= e((string)$departmentLogo['url']) ?>" class="lab-navbar-logo" alt="<?= e((string)$departmentLogo['alt']) ?>">
+            </a>
+        </div>
         <button
             class="navbar-toggler"
             type="button"
@@ -66,6 +79,7 @@ if ($topbarEmail === '') {
                 <li class="nav-item"><a class="nav-link" href="/laboratorio/tutoriais.php">Tutoriais</a></li>
                 <li class="nav-item"><a class="nav-link" href="/laboratorio/blog.php">Blog</a></li>
                 <li class="nav-item"><a class="nav-link" href="/laboratorio/eventos.php">Eventos</a></li>
+                <li class="nav-item"><a class="nav-link" href="/contato/index.php">Contato</a></li>
             </ul>
 
             <div class="d-flex gap-2">

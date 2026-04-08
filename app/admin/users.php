@@ -24,10 +24,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $role = admin_normalize_role((string)($_POST['role'] ?? 'editor'));
 
                 if ($name === '' || $email === '' || $password === '') {
-                    throw new RuntimeException('Nome, e-mail e senha sÃƒÆ’Ã‚Â£o obrigatÃƒÆ’Ã‚Â³rios.');
+                    throw new RuntimeException('Nome, e-mail e senha sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o obrigatÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³rios.');
                 }
                 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    throw new RuntimeException('Informe um e-mail vÃƒÆ’Ã‚Â¡lido.');
+                    throw new RuntimeException('Informe um e-mail vÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido.');
                 }
                 $passwordError = admin_validate_password_strength($password);
                 if ($passwordError !== null) {
@@ -56,13 +56,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $isActive = isset($_POST['is_active']) ? 1 : 0;
 
                 if ($id <= 0 || $name === '' || $email === '') {
-                    throw new RuntimeException('Dados invÃƒÆ’Ã‚Â¡lidos para atualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o.');
+                    throw new RuntimeException('Dados invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lidos para atualizaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o.');
                 }
                 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    throw new RuntimeException('Informe um e-mail vÃƒÆ’Ã‚Â¡lido.');
+                    throw new RuntimeException('Informe um e-mail vÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido.');
                 }
                 if ((int)$current['id'] === $id && $isActive !== 1) {
-                    throw new RuntimeException('VocÃƒÆ’Ã‚Âª nÃƒÆ’Ã‚Â£o pode desativar sua prÃƒÆ’Ã‚Â³pria conta.');
+                    throw new RuntimeException('VocÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âª nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o pode desativar sua prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³pria conta.');
                 }
 
                 $stmt = db()->prepare(
@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id = (int)($_POST['id'] ?? 0);
                 $newPassword = (string)($_POST['new_password'] ?? '');
                 if ($id <= 0) {
-                    throw new RuntimeException('Conta invÃƒÆ’Ã‚Â¡lida para redefiniÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de senha.');
+                    throw new RuntimeException('Conta invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lida para redefiniÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de senha.');
                 }
                 $passwordError = admin_validate_password_strength($newPassword);
                 if ($passwordError !== null) {
@@ -118,7 +118,7 @@ $users = db()->query(
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Admin - UsuÃƒÆ’Ã‚Â¡rios</title>
+    <title>Admin - UsuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rios</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-rc3/dist/css/adminlte.min.css">
 </head>
@@ -129,6 +129,7 @@ $users = db()->query(
             <ul class="navbar-nav">
                 <li class="nav-item"><a class="nav-link" data-lte-toggle="sidebar" href="#" role="button">Menu</a></li>
                 <li class="nav-item d-none d-md-block"><a href="/admin/dashboard.php" class="nav-link">Dashboard</a></li>
+                <li class="nav-item d-none d-md-block"><a href="/" class="nav-link" target="_blank" rel="noopener">Ir para o site</a></li>
             </ul>
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
@@ -145,7 +146,7 @@ $users = db()->query(
     <main class="app-main">
         <div class="app-content-header">
             <div class="container-fluid">
-                <h3 class="mb-0">Gerenciar UsuÃƒÆ’Ã‚Â¡rios e PermissÃƒÆ’Ã‚Âµes</h3>
+                <h3 class="mb-0">Gerenciar UsuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rios e PermissÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes</h3>
             </div>
         </div>
         <div class="app-content">
@@ -197,9 +198,9 @@ $users = db()->query(
                                 <th>E-mail</th>
                                 <th>Perfil</th>
                                 <th>Status</th>
-                                <th>ÃƒÆ’Ã…Â¡ltimo login</th>
+                                <th>ÃƒÆ’Ã†â€™Ãƒâ€¦Ã‚Â¡ltimo login</th>
                                 <th>Criado em</th>
-                                <th class="text-end">AÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes</th>
+                                <th class="text-end">AÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -231,7 +232,7 @@ $users = db()->query(
                                                 <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                                                 <input type="hidden" name="action" value="update">
                                                 <input type="hidden" name="id" value="<?= e((string)$u['id']) ?>">
-                                                <div class="modal-header"><h5 class="modal-title">Editar usuÃƒÆ’Ã‚Â¡rio</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                                                <div class="modal-header"><h5 class="modal-title">Editar usuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                                                 <div class="modal-body">
                                                     <div class="mb-2">
                                                         <label class="form-label">Nome</label>

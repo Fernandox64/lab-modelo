@@ -1,9 +1,15 @@
-﻿<?php
+<?php
 declare(strict_types=1);
 
 require_once __DIR__ . '/../includes/config.php';
 
-require_admin_permission('manage_content');
+require_admin();
+if (!admin_can('manage_content') && !admin_can('manage_menu')) {
+    http_response_code(403);
+    header('Content-Type: application/json; charset=UTF-8');
+    echo json_encode(['error' => 'Acesso negado']);
+    exit;
+}
 
 header('Content-Type: application/json; charset=UTF-8');
 

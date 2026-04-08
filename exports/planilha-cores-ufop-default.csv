@@ -1,0 +1,11 @@
+token,hex,uso_padrao,observacao
+ufop_vinho_principal,#8C1D40,Menu principal e destaques institucionais,Extraida da identidade visual atual da UFOP (referencia portal e logomarca)
+ufop_vinho_escuro,#5C132B,Hover/ativo do menu principal,Tonalidade de contraste para navegacao
+ufop_cinza_medio,#B3BAC3,Elementos neutros e bordas suaves,Base neutra institucional
+ufop_cinza_escuro,#2B2F33,Texto principal,Contraste de leitura
+ufop_dourado_apoio,#B08D57,Destaques secundarios e acentos,Cor de apoio institucional
+ufop_fundo_claro,#F7F7F8,Fundo global das paginas,Fundo neutro para leitura
+menu_bg,#8C1D40,Fundo do menu principal,Controlado pelo tema escolhido no admin
+menu_text,#FFFFFF,Texto do menu principal,Controlado pelo tema escolhido no admin
+menu_hover_bg,#5C132B,Hover do menu principal,Controlado pelo tema escolhido no admin
+menu_hover_text,#FFFFFF,Texto no hover do menu principal,Controlado pelo tema escolhido no admin

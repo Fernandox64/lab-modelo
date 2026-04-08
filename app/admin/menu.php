@@ -18,6 +18,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $departmentName = trim((string)($_POST['topbar_department_name'] ?? ''));
             $topbarPhone = trim((string)($_POST['topbar_phone'] ?? ''));
             $topbarEmail = trim((string)($_POST['topbar_email'] ?? ''));
+            $headerDepartmentLogoUrl = normalize_optional_logo_url((string)($_POST['header_department_logo_url'] ?? ''));
+            $headerDepartmentLogoLink = normalize_menu_url((string)($_POST['header_department_logo_link'] ?? '/'), '/');
+            $headerDepartmentLogoAlt = trim((string)($_POST['header_department_logo_alt'] ?? ''));
             $showStudentCalendar = isset($_POST['show_student_calendar']) ? '1' : '0';
             $studentCalendarSourceUrl = trim((string)($_POST['student_calendar_source_url'] ?? ''));
             $studentCalendarShowHolidays = isset($_POST['student_calendar_show_holidays']) ? '1' : '0';
@@ -31,6 +34,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 site_setting_set('topbar_department_name', $departmentName);
                 site_setting_set('topbar_phone', $topbarPhone);
                 site_setting_set('topbar_email', $topbarEmail);
+                site_setting_set('header_department_logo_url', $headerDepartmentLogoUrl);
+                site_setting_set('header_department_logo_link', $headerDepartmentLogoLink);
+                site_setting_set('header_department_logo_alt', $headerDepartmentLogoAlt);
                 site_setting_set('show_student_calendar', $showStudentCalendar);
                 site_setting_set('student_calendar_source_url', $studentCalendarSourceUrl !== '' ? $studentCalendarSourceUrl : 'https://www.prograd.ufop.br/calendario-academico');
                 site_setting_set('student_calendar_show_holidays', $studentCalendarShowHolidays);
@@ -41,6 +47,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'topbar_department_name' => $departmentName,
                     'topbar_phone' => $topbarPhone,
                     'topbar_email' => $topbarEmail,
+                    'header_department_logo_url' => $headerDepartmentLogoUrl,
+                    'header_department_logo_link' => $headerDepartmentLogoLink,
+                    'header_department_logo_alt' => $headerDepartmentLogoAlt,
                     'show_student_calendar' => $showStudentCalendar,
                     'student_calendar_source_url' => $studentCalendarSourceUrl,
                     'student_calendar_show_holidays' => $studentCalendarShowHolidays,
@@ -59,6 +68,9 @@ $graduacao = primary_menu_item('graduacao');
 $topbarDepartmentName = site_setting_get('topbar_department_name', 'Departamento Exemplo');
 $topbarPhone = site_setting_get('topbar_phone', SITE_PHONE);
 $topbarEmail = site_setting_get('topbar_email', SITE_EMAIL);
+$headerDepartmentLogoUrl = site_setting_get('header_department_logo_url', '');
+$headerDepartmentLogoLink = site_setting_get('header_department_logo_link', '/');
+$headerDepartmentLogoAlt = site_setting_get('header_department_logo_alt', 'Logo do laboratorio');
 $showStudentCalendar = site_setting_get('show_student_calendar', '1') !== '0';
 $studentCalendarSourceUrl = site_setting_get('student_calendar_source_url', 'https://www.prograd.ufop.br/calendario-academico');
 $studentCalendarShowHolidays = site_setting_get('student_calendar_show_holidays', '1') !== '0';
@@ -80,6 +92,7 @@ $studentCalendarManualEvents = site_setting_get('student_calendar_manual_events'
             <ul class="navbar-nav">
                 <li class="nav-item"><a class="nav-link" data-lte-toggle="sidebar" href="#" role="button">Menu</a></li>
                 <li class="nav-item d-none d-md-block"><a href="/admin/dashboard.php" class="nav-link">Dashboard</a></li>
+                <li class="nav-item d-none d-md-block"><a href="/" class="nav-link" target="_blank" rel="noopener">Ir para o site</a></li>
             </ul>
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
@@ -137,6 +150,35 @@ $studentCalendarManualEvents = site_setting_get('student_calendar_manual_events'
                                     <label class="form-label">E-mail do topo</label>
                                     <input class="form-control" name="topbar_email" required value="<?= e((string)$topbarEmail) ?>" placeholder="departamento@instituicao.br">
                                 </div>
+                                <div class="col-12 pt-2"><h4 class="h6 text-uppercase text-muted">Logo do laboratorio no cabecalho</h4></div>
+                                <div class="col-md-8">
+                                    <label class="form-label">URL da imagem (PNG/SVG transparente)</label>
+                                    <input class="form-control" id="header_department_logo_url" name="header_department_logo_url" value="<?= e((string)$headerDepartmentLogoUrl) ?>" placeholder="/uploads/editor/2026/04/logo-lab.png">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Texto alternativo (ALT)</label>
+                                    <input class="form-control" name="header_department_logo_alt" value="<?= e((string)$headerDepartmentLogoAlt) ?>" placeholder="Logo do laboratorio">
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label">Link ao clicar na logo</label>
+                                    <input class="form-control" name="header_department_logo_link" value="<?= e((string)$headerDepartmentLogoLink) ?>" placeholder="/laboratorio/sobre.php">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Upload rapido da logo</label>
+                                    <input class="form-control" type="file" id="header_department_logo_upload" accept="image/png,image/svg+xml,image/webp,image/jpeg">
+                                    <div class="form-text">Ao enviar, a URL sera preenchida automaticamente.</div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Pre-visualizacao da logo do laboratorio</label>
+                                    <div class="border rounded p-3 bg-light d-flex align-items-center justify-content-center" style="min-height:90px">
+                                        <img
+                                            id="header_department_logo_preview"
+                                            src="<?= e((string)($headerDepartmentLogoUrl !== '' ? $headerDepartmentLogoUrl : '/assets/images/lab-logo-placeholder.svg')) ?>"
+                                            alt="Pre-visualizacao da logo do laboratorio"
+                                            style="max-height:64px;max-width:260px;object-fit:contain"
+                                        >
+                                    </div>
+                                </div>
                                 <div class="col-12">
                                     <div class="form-check mt-2">
                                         <input class="form-check-input" type="checkbox" id="show_student_calendar" name="show_student_calendar" value="1" <?= $showStudentCalendar ? 'checked' : '' ?>>
@@ -174,6 +216,36 @@ $studentCalendarManualEvents = site_setting_get('student_calendar_manual_events'
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-rc3/dist/js/adminlte.min.js"></script>
+<script>
+(function () {
+    var fileInput = document.getElementById('header_department_logo_upload');
+    var urlInput = document.getElementById('header_department_logo_url');
+    var preview = document.getElementById('header_department_logo_preview');
+    if (!fileInput || !urlInput) return;
+
+    function refreshPreview() {
+        if (!preview) return;
+        var value = (urlInput.value || '').trim();
+        preview.src = value !== '' ? value : '/assets/images/lab-logo-placeholder.svg';
+    }
+    urlInput.addEventListener('input', refreshPreview);
+
+    fileInput.addEventListener('change', async function () {
+        if (!fileInput.files || fileInput.files.length === 0) return;
+        var fd = new FormData();
+        fd.append('file', fileInput.files[0]);
+        try {
+            var resp = await fetch('/admin/upload-image.php', { method: 'POST', body: fd });
+            var data = await resp.json();
+            if (!resp.ok || !data.location) throw new Error(data.error || 'Falha no upload');
+            urlInput.value = data.location;
+            refreshPreview();
+        } catch (err) {
+            alert('Nao foi possivel enviar a imagem da logo.');
+        }
+    });
+})();
+</script>
 </body>
 </html>
 

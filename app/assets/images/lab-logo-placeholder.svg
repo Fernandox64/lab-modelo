@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="120" viewBox="0 0 360 120">
+  <rect x="1" y="1" width="358" height="118" rx="12" ry="12" fill="none" stroke="#8AA8E8" stroke-width="2" stroke-dasharray="8 6"/>
+  <text x="180" y="52" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" fill="#2F4F8F">
+    LOGO DO LABORATORIO
+  </text>
+  <text x="180" y="76" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#5F6E8A">
+    PNG/SVG com fundo transparente
+  </text>
+</svg>
+

@@ -13,24 +13,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Token CSRF invalido.';
     } else {
         try {
-            laboratory_about_save($_POST);
-            admin_audit_log('laboratorio_about_update', ['page' => 'laboratorio/sobre.php'], 'site_settings');
-            $success = 'Pagina "O Laboratorio" atualizada com sucesso.';
+            laboratory_contact_save($_POST);
+            admin_audit_log('laboratorio_contact_update', ['page' => 'contato/index.php'], 'site_settings');
+            $success = 'Pagina "Contato" atualizada com sucesso.';
         } catch (Throwable $e) {
             $error = 'Nao foi possivel salvar o conteudo da pagina.';
-            error_log('Admin laboratorio-sobre error: ' . $e->getMessage());
+            error_log('Admin laboratorio-contato error: ' . $e->getMessage());
         }
     }
 }
 
-$content = laboratory_about_get();
+$content = laboratory_contact_get();
 ?>
 <!doctype html>
 <html lang="pt-BR">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Admin - Pagina O Laboratorio</title>
+    <title>Admin - Pagina Contato</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-rc3/dist/css/adminlte.min.css">
     <script src="https://cdn.jsdelivr.net/npm/tinymce@7.9.1/tinymce.min.js" referrerpolicy="origin"></script>
@@ -54,14 +54,14 @@ $content = laboratory_about_get();
             </ul>
         </div>
     </nav>
-    <?php render_admin_sidebar('lab_about'); ?>
+    <?php render_admin_sidebar('lab_contact'); ?>
 
     <main class="app-main">
         <div class="app-content-header">
             <div class="container-fluid">
                 <div class="d-flex justify-content-between align-items-center">
-                    <h3 class="mb-0">Editar Pagina O Laboratorio</h3>
-                    <a class="btn btn-dark btn-sm" href="/laboratorio/sobre.php" target="_blank" rel="noopener">Ver pagina publica</a>
+                    <h3 class="mb-0">Editar Pagina Contato</h3>
+                    <a class="btn btn-dark btn-sm" href="/contato/index.php" target="_blank" rel="noopener">Ver pagina publica</a>
                 </div>
             </div>
         </div>
@@ -76,22 +76,34 @@ $content = laboratory_about_get();
                         <form method="post">
                             <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
 
-                            <div class="mb-3">
-                                <label class="form-label">Titulo</label>
-                                <input class="form-control" name="title" required value="<?= e((string)$content['title']) ?>">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">Titulo</label>
+                                    <input class="form-control" name="title" required value="<?= e((string)$content['title']) ?>">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Resumo</label>
+                                    <textarea class="form-control" rows="3" name="summary" required><?= e((string)$content['summary']) ?></textarea>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">E-mail</label>
+                                    <input class="form-control" name="email" value="<?= e((string)$content['email']) ?>">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Telefone</label>
+                                    <input class="form-control" name="phone" value="<?= e((string)$content['phone']) ?>">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Endereco</label>
+                                    <input class="form-control" name="address" value="<?= e((string)$content['address']) ?>">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Conteudo complementar</label>
+                                    <textarea class="form-control editor" rows="8" name="content_html"><?= e((string)$content['content_html']) ?></textarea>
+                                </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Resumo (linha de destaque)</label>
-                                <textarea class="form-control" rows="3" name="summary" required><?= e((string)$content['summary']) ?></textarea>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">Conteudo principal</label>
-                                <textarea class="form-control editor" rows="10" name="content_html"><?= e((string)$content['content_html']) ?></textarea>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary">Salvar alteracoes</button>
+                            <button type="submit" class="btn btn-primary mt-3">Salvar alteracoes</button>
                         </form>
                     </div>
                 </div>
@@ -105,7 +117,7 @@ $content = laboratory_about_get();
 <script>
 tinymce.init({
   selector: '.editor',
-  height: 280,
+  height: 260,
   menubar: false,
   plugins: 'lists link table code',
   toolbar: 'undo redo | bold italic | bullist numlist | link | code',
@@ -114,3 +126,4 @@ tinymce.init({
 </script>
 </body>
 </html>
+
