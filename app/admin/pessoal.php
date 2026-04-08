@@ -5,6 +5,7 @@ require_once __DIR__ . '/../includes/config.php';
 
 require_admin_permission('manage_people');
 ensure_people_items_scope_column();
+ensure_people_items_role_type_enum();
 
 function people_slugify(string $text): string {
     $text = mb_strtolower(trim($text), 'UTF-8');
@@ -72,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sortOrder = isset($_POST['sort_order']) ? (int)$_POST['sort_order'] : 0;
             $slugInput = trim((string)($_POST['slug'] ?? ''));
 
-            if (!in_array($roleType, ['docente', 'funcionario'], true)) {
+            if (!array_key_exists($roleType, people_role_type_options())) {
                 $roleType = 'docente';
             }
 
@@ -207,9 +208,11 @@ $items = $stmt->fetchAll();
                                 <div class="col-md-4">
                                     <label class="form-label">Tipo</label>
                                     <?php $selectedRole = (string)($editing['role_type'] ?? 'docente'); ?>
+                                    <?php $roleOptions = people_role_type_options(); ?>
                                     <select class="form-select" name="role_type">
-                                        <option value="docente"<?= $selectedRole === 'docente' ? ' selected' : '' ?>>Docente</option>
-                                        <option value="funcionario"<?= $selectedRole === 'funcionario' ? ' selected' : '' ?>>Funcionario</option>
+                                        <?php foreach ($roleOptions as $roleValue => $roleLabel): ?>
+                                            <option value="<?= e($roleValue) ?>"<?= $selectedRole === $roleValue ? ' selected' : '' ?>><?= e($roleLabel) ?></option>
+                                        <?php endforeach; ?>
                                     </select>
                                 </div>
                                 <div class="col-md-8">
@@ -292,7 +295,7 @@ $items = $stmt->fetchAll();
                                     <tr>
                                         <td><?= e((string)$row['id']) ?></td>
                                         <td><?= e(people_scope_label((string)$row['scope'])) ?></td>
-                                        <td><?= e((string)$row['role_type']) ?></td>
+                                        <td><?= e(people_role_type_label((string)$row['role_type'])) ?></td>
                                         <td><?= e((string)$row['name']) ?></td>
                                         <td><?= e((string)$row['position']) ?></td>
                                         <td><?= e((string)($row['email'] ?: $row['phone'])) ?></td>

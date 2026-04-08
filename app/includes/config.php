@@ -1177,6 +1177,294 @@ function ppgcc_section_save(string $section, array $data): void {
     site_setting_set($prefix . 'summary', $summary !== '' ? $summary : $defaults['summary']);
     site_setting_set($prefix . 'content_html', $contentHtml !== '' ? $contentHtml : $defaults['content_html']);
 }
+function laboratory_about_defaults(): array {
+    return [
+        'title' => 'O Laboratorio',
+        'summary' => 'Laboratorio de pesquisa vinculado a departamento de universidade federal, com atuacao em ensino, pesquisa, extensao e inovacao.',
+        'content_html' => '<p>Esta pagina apresenta a missao, as linhas de pesquisa e os objetivos estrategicos do laboratorio.</p><p>Inclua historico, infraestrutura, areas de atuacao, parcerias e indicadores de impacto.</p>',
+    ];
+}
+function laboratory_about_get(): array {
+    $defaults = laboratory_about_defaults();
+    $prefix = 'laboratorio_about_';
+    return [
+        'title' => trim(site_setting_get($prefix . 'title', $defaults['title'])),
+        'summary' => trim(site_setting_get($prefix . 'summary', $defaults['summary'])),
+        'content_html' => site_setting_get($prefix . 'content_html', $defaults['content_html']),
+    ];
+}
+function laboratory_about_save(array $data): void {
+    $defaults = laboratory_about_defaults();
+    $prefix = 'laboratorio_about_';
+    $title = trim((string)($data['title'] ?? $defaults['title']));
+    $summary = trim((string)($data['summary'] ?? $defaults['summary']));
+    $contentHtml = sanitize_rich_text((string)($data['content_html'] ?? $defaults['content_html']));
+    site_setting_set($prefix . 'title', $title !== '' ? $title : $defaults['title']);
+    site_setting_set($prefix . 'summary', $summary !== '' ? $summary : $defaults['summary']);
+    site_setting_set($prefix . 'content_html', $contentHtml !== '' ? $contentHtml : $defaults['content_html']);
+}
+function laboratory_page_catalog(): array {
+    return [
+        'projetos' => [
+            'label' => 'Projetos',
+            'public_url' => '/laboratorio/projetos.php',
+            'defaults' => [
+                'title' => 'Projetos',
+                'summary' => 'Projetos de pesquisa e extensao conduzidos pelo laboratorio.',
+                'content_html' => '<p>Descreva os projetos ativos do laboratorio, objetivos, equipe envolvida e resultados esperados.</p>',
+            ],
+        ],
+        'publicacoes' => [
+            'label' => 'Publicacoes',
+            'public_url' => '/laboratorio/publicacoes.php',
+            'defaults' => [
+                'title' => 'Publicacoes',
+                'summary' => 'Producao cientifica do laboratorio, em parceria com o departamento.',
+                'content_html' => '<p>Liste artigos, livros, capitulos e trabalhos em eventos produzidos pela equipe do laboratorio.</p>',
+            ],
+        ],
+        'cursos' => [
+            'label' => 'Cursos',
+            'public_url' => '/laboratorio/cursos.php',
+            'defaults' => [
+                'title' => 'Cursos',
+                'summary' => 'Formacoes e capacitacoes vinculadas ao laboratorio.',
+                'content_html' => '<p>Cadastre cursos, oficinas e trilhas de formacao oferecidas pelo laboratorio.</p>',
+            ],
+        ],
+        'parceiros' => [
+            'label' => 'Parceiros',
+            'public_url' => '/laboratorio/parceiros.php',
+            'defaults' => [
+                'title' => 'Parceiros',
+                'summary' => 'Instituicoes e grupos que colaboram com o laboratorio.',
+                'content_html' => '<p>Apresente os parceiros institucionais, academicos e do setor produtivo.</p>',
+            ],
+        ],
+        'tutoriais' => [
+            'label' => 'Tutoriais',
+            'public_url' => '/laboratorio/tutoriais.php',
+            'defaults' => [
+                'title' => 'Tutoriais',
+                'summary' => 'Guias tecnicos para atividades de pesquisa, desenvolvimento e reproducao de resultados.',
+                'content_html' => '<p>Publique tutoriais tecnicos, boas praticas e guias de reproducibilidade.</p>',
+            ],
+        ],
+        'blog' => [
+            'label' => 'Blog',
+            'public_url' => '/laboratorio/blog.php',
+            'defaults' => [
+                'title' => 'Blog',
+                'summary' => 'Noticias, atualizacoes de pesquisa e textos tecnicos do laboratorio.',
+                'content_html' => '<p>Espaco para comunicados, artigos curtos e atualizacoes das atividades do laboratorio.</p>',
+            ],
+        ],
+        'eventos' => [
+            'label' => 'Eventos',
+            'public_url' => '/laboratorio/eventos.php',
+            'defaults' => [
+                'title' => 'Eventos',
+                'summary' => 'Agenda de seminarios, oficinas, palestras e encontros do laboratorio.',
+                'content_html' => '<p>Divulgue aqui os eventos promovidos pelo laboratorio e seus parceiros.</p>',
+            ],
+        ],
+    ];
+}
+function laboratory_page_slug_normalize(string $slug): string {
+    $slug = trim(mb_strtolower($slug, 'UTF-8'));
+    $catalog = laboratory_page_catalog();
+    return array_key_exists($slug, $catalog) ? $slug : 'projetos';
+}
+function laboratory_page_get(string $slug): array {
+    $slug = laboratory_page_slug_normalize($slug);
+    $catalog = laboratory_page_catalog();
+    $meta = $catalog[$slug];
+    $defaults = (array)$meta['defaults'];
+    $prefix = 'laboratorio_page_' . $slug . '_';
+    return [
+        'slug' => $slug,
+        'label' => (string)$meta['label'],
+        'public_url' => (string)$meta['public_url'],
+        'title' => trim(site_setting_get($prefix . 'title', (string)$defaults['title'])),
+        'summary' => trim(site_setting_get($prefix . 'summary', (string)$defaults['summary'])),
+        'content_html' => site_setting_get($prefix . 'content_html', (string)$defaults['content_html']),
+    ];
+}
+function laboratory_page_save(string $slug, array $data): void {
+    $slug = laboratory_page_slug_normalize($slug);
+    $catalog = laboratory_page_catalog();
+    $meta = $catalog[$slug];
+    $defaults = (array)$meta['defaults'];
+    $prefix = 'laboratorio_page_' . $slug . '_';
+    $title = trim((string)($data['title'] ?? (string)$defaults['title']));
+    $summary = trim((string)($data['summary'] ?? (string)$defaults['summary']));
+    $contentHtml = sanitize_rich_text((string)($data['content_html'] ?? (string)$defaults['content_html']));
+    site_setting_set($prefix . 'title', $title !== '' ? $title : (string)$defaults['title']);
+    site_setting_set($prefix . 'summary', $summary !== '' ? $summary : (string)$defaults['summary']);
+    site_setting_set($prefix . 'content_html', $contentHtml !== '' ? $contentHtml : (string)$defaults['content_html']);
+}
+function ensure_laboratory_page_items_table(): void {
+    static $ready = false;
+    if ($ready) {
+        return;
+    }
+    $ready = true;
+    try {
+        db()->exec(
+            "CREATE TABLE IF NOT EXISTS laboratory_page_items (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                page_slug VARCHAR(60) NOT NULL,
+                slug VARCHAR(160) NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                summary TEXT NOT NULL,
+                category VARCHAR(100) NOT NULL DEFAULT 'Laboratorio',
+                content_html MEDIUMTEXT NOT NULL,
+                image_url VARCHAR(255) DEFAULT NULL,
+                external_url VARCHAR(255) DEFAULT NULL,
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+                sort_order INT NOT NULL DEFAULT 0,
+                published_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY uniq_lab_page_slug (page_slug, slug),
+                INDEX idx_lab_page_pub (page_slug, is_active, published_at)
+            ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+        );
+    } catch (Throwable $e) {
+        error_log('Failed ensuring laboratory_page_items table: ' . $e->getMessage());
+    }
+}
+function laboratory_page_item_unique_slug(string $pageSlug, string $baseSlug, ?int $ignoreId = null): string {
+    ensure_laboratory_page_items_table();
+    $slug = simple_slugify($baseSlug);
+    $i = 1;
+    while (true) {
+        $sql = 'SELECT id FROM laboratory_page_items WHERE page_slug = :page_slug AND slug = :slug';
+        $params = [':page_slug' => $pageSlug, ':slug' => $slug];
+        if ($ignoreId !== null) {
+            $sql .= ' AND id <> :id';
+            $params[':id'] = $ignoreId;
+        }
+        $stmt = db()->prepare($sql);
+        $stmt->execute($params);
+        if (!$stmt->fetch()) {
+            return $slug;
+        }
+        $i++;
+        $slug = substr(simple_slugify($baseSlug), 0, 150 - strlen((string)$i) - 1) . '-' . $i;
+    }
+}
+function laboratory_page_items_years(string $pageSlug): array {
+    ensure_laboratory_page_items_table();
+    try {
+        $stmt = db()->prepare(
+            "SELECT DISTINCT YEAR(published_at) AS y
+             FROM laboratory_page_items
+             WHERE page_slug = :page_slug AND is_active = 1
+             ORDER BY y DESC"
+        );
+        $stmt->execute([':page_slug' => $pageSlug]);
+        return array_values(array_filter(array_map(static fn(array $r): int => (int)$r['y'], $stmt->fetchAll()), static fn(int $y): bool => $y > 0));
+    } catch (Throwable $e) {
+        error_log('Failed loading laboratory page years: ' . $e->getMessage());
+        return [];
+    }
+}
+function laboratory_page_items_paginated(string $pageSlug, int $selectedYear = 0, int $currentPage = 1, int $perPage = 9): array {
+    ensure_laboratory_page_items_table();
+    $years = laboratory_page_items_years($pageSlug);
+    if ($selectedYear <= 0 && !empty($years)) {
+        $selectedYear = $years[0];
+    }
+    $currentPage = max(1, $currentPage);
+    $totalItems = 0;
+    $totalPages = 1;
+    $items = [];
+
+    try {
+        if ($selectedYear > 0) {
+            $countStmt = db()->prepare(
+                "SELECT COUNT(*)
+                 FROM laboratory_page_items
+                 WHERE page_slug = :page_slug AND is_active = 1 AND YEAR(published_at) = :year"
+            );
+            $countStmt->execute([':page_slug' => $pageSlug, ':year' => $selectedYear]);
+            $totalItems = (int)$countStmt->fetchColumn();
+            $totalPages = max(1, (int)ceil($totalItems / max(1, $perPage)));
+            $currentPage = min($currentPage, $totalPages);
+            $offset = ($currentPage - 1) * $perPage;
+
+            $stmt = db()->prepare(
+                "SELECT id, slug, title, summary, category, content_html, image_url, external_url, published_at
+                 FROM laboratory_page_items
+                 WHERE page_slug = :page_slug AND is_active = 1 AND YEAR(published_at) = :year
+                 ORDER BY sort_order ASC, published_at DESC, id DESC
+                 LIMIT :limite OFFSET :offset"
+            );
+            $stmt->bindValue(':page_slug', $pageSlug, PDO::PARAM_STR);
+            $stmt->bindValue(':year', $selectedYear, PDO::PARAM_INT);
+            $stmt->bindValue(':limite', $perPage, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->execute();
+            $items = $stmt->fetchAll();
+        }
+    } catch (Throwable $e) {
+        error_log('Failed loading laboratory page items: ' . $e->getMessage());
+    }
+
+    return [
+        'years' => $years,
+        'selected_year' => $selectedYear,
+        'current_page' => $currentPage,
+        'total_items' => $totalItems,
+        'total_pages' => $totalPages,
+        'items' => $items,
+    ];
+}
+function laboratory_page_items_latest(string $pageSlug, int $limit = 3): array {
+    ensure_laboratory_page_items_table();
+    $limit = max(1, min(20, $limit));
+    try {
+        $stmt = db()->prepare(
+            "SELECT id, slug, title, summary, category, image_url, external_url, published_at
+             FROM laboratory_page_items
+             WHERE page_slug = :page_slug AND is_active = 1
+             ORDER BY sort_order ASC, published_at DESC, id DESC
+             LIMIT :limite"
+        );
+        $stmt->bindValue(':page_slug', $pageSlug, PDO::PARAM_STR);
+        $stmt->bindValue(':limite', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll() ?: [];
+    } catch (Throwable $e) {
+        error_log('Failed loading latest laboratory page items: ' . $e->getMessage());
+        return [];
+    }
+}
+function laboratory_page_public_url(string $slug): string {
+    $meta = laboratory_page_get($slug);
+    return (string)($meta['public_url'] ?? '/');
+}
+function laboratory_page_build_url(string $slug, int $year, int $page): string {
+    return laboratory_page_public_url($slug) . '?ano=' . urlencode((string)$year) . '&pagina=' . urlencode((string)$page);
+}
+function laboratory_page_item_find(string $pageSlug, string $itemSlug): ?array {
+    ensure_laboratory_page_items_table();
+    try {
+        $stmt = db()->prepare(
+            "SELECT id, page_slug, slug, title, summary, category, content_html, image_url, external_url, published_at
+             FROM laboratory_page_items
+             WHERE page_slug = :page_slug AND slug = :slug AND is_active = 1
+             LIMIT 1"
+        );
+        $stmt->execute([':page_slug' => $pageSlug, ':slug' => $itemSlug]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    } catch (Throwable $e) {
+        error_log('Failed finding laboratory page item: ' . $e->getMessage());
+        return null;
+    }
+}
 function simple_slugify(string $text): string {
     $text = mb_strtolower(trim($text), 'UTF-8');
     $text = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text) ?: $text;
@@ -1771,31 +2059,119 @@ function ensure_admin_users_table(): void {
         error_log('Failed ensuring admin_users table: ' . $e->getMessage());
     }
 }
+function admin_default_seed_accounts(): array {
+    $accounts = [
+        [
+            'name' => 'Superadmin',
+            'email' => 'superadmin@departamento.local',
+            'password' => 'Super@2026!',
+            'role' => 'superadmin',
+        ],
+        [
+            'name' => 'Editor',
+            'email' => 'editor@departamento.local',
+            'password' => 'Editor@2026!',
+            'role' => 'editor',
+        ],
+        [
+            'name' => 'Secretaria',
+            'email' => 'secretaria@departamento.local',
+            'password' => 'Secretaria@2026!',
+            'role' => 'secretaria',
+        ],
+        [
+            'name' => 'Administrador',
+            'email' => 'admin@example.com',
+            'password' => 'SuperAdmin@2026',
+            'role' => 'superadmin',
+        ],
+    ];
+
+    $envEmail = admin_email_config();
+    $envHash = admin_password_hash_config();
+    if ($envEmail !== '' && $envHash !== '') {
+        $found = false;
+        foreach ($accounts as $account) {
+            if (mb_strtolower((string)$account['email'], 'UTF-8') === mb_strtolower($envEmail, 'UTF-8')) {
+                $found = true;
+                break;
+            }
+        }
+        if (!$found) {
+            $accounts[] = [
+                'name' => 'Administrador',
+                'email' => $envEmail,
+                'password_hash' => $envHash,
+                'role' => 'superadmin',
+            ];
+        }
+    }
+
+    return $accounts;
+}
 function ensure_default_admin_user(): void {
     ensure_admin_users_table();
-    $email = admin_email_config();
-    $hash = admin_password_hash_config();
-    if ($email === '' || $hash === '') {
-        return;
-    }
     try {
-        $stmt = db()->prepare('SELECT id FROM admin_users WHERE email = :email LIMIT 1');
-        $stmt->execute([':email' => $email]);
-        if ($stmt->fetch()) {
-            return;
+        foreach (admin_default_seed_accounts() as $account) {
+            $email = trim((string)($account['email'] ?? ''));
+            if ($email === '') {
+                continue;
+            }
+            $name = trim((string)($account['name'] ?? 'Administrador'));
+            $role = admin_normalize_role((string)($account['role'] ?? 'editor'));
+            $seedHash = trim((string)($account['password_hash'] ?? ''));
+            $seedPassword = (string)($account['password'] ?? '');
+
+            $stmt = db()->prepare('SELECT id, password_hash, role, is_active, name FROM admin_users WHERE email = :email LIMIT 1');
+            $stmt->execute([':email' => $email]);
+            $existing = $stmt->fetch();
+
+            if (!$existing) {
+                $insertHash = $seedHash !== '' ? $seedHash : password_hash($seedPassword, PASSWORD_DEFAULT);
+                $insert = db()->prepare(
+                    'INSERT INTO admin_users (name, email, password_hash, role, is_active)
+                     VALUES (:name, :email, :password_hash, :role, 1)'
+                );
+                $insert->execute([
+                    ':name' => $name !== '' ? $name : 'Administrador',
+                    ':email' => $email,
+                    ':password_hash' => $insertHash,
+                    ':role' => $role,
+                ]);
+                continue;
+            }
+
+            $needsPasswordUpdate = false;
+            if ($seedHash !== '') {
+                $needsPasswordUpdate = !hash_equals((string)$existing['password_hash'], $seedHash);
+            } elseif ($seedPassword !== '') {
+                $needsPasswordUpdate = !password_verify($seedPassword, (string)$existing['password_hash']);
+            }
+            $needsMetaUpdate =
+                (string)$existing['role'] !== $role
+                || (int)$existing['is_active'] !== 1
+                || trim((string)$existing['name']) !== $name;
+
+            if ($needsPasswordUpdate || $needsMetaUpdate) {
+                $updateHash = (string)$existing['password_hash'];
+                if ($needsPasswordUpdate) {
+                    $updateHash = $seedHash !== '' ? $seedHash : password_hash($seedPassword, PASSWORD_DEFAULT);
+                }
+                $update = db()->prepare(
+                    'UPDATE admin_users
+                     SET name = :name, password_hash = :password_hash, role = :role, is_active = 1
+                     WHERE id = :id'
+                );
+                $update->execute([
+                    ':id' => (int)$existing['id'],
+                    ':name' => $name !== '' ? $name : 'Administrador',
+                    ':password_hash' => $updateHash,
+                    ':role' => $role,
+                ]);
+            }
         }
-        $insert = db()->prepare(
-            'INSERT INTO admin_users (name, email, password_hash, role, is_active)
-             VALUES (:name, :email, :password_hash, :role, 1)'
-        );
-        $insert->execute([
-            ':name' => 'Administrador',
-            ':email' => $email,
-            ':password_hash' => $hash,
-            ':role' => 'superadmin',
-        ]);
     } catch (Throwable $e) {
-        error_log('Failed ensuring default admin user: ' . $e->getMessage());
+        error_log('Failed ensuring default admin users: ' . $e->getMessage());
     }
 }
 function ensure_admin_auth_events_table(): void {
@@ -1973,12 +2349,23 @@ function require_admin_permission(string $permission): void {
 function render_admin_sidebar(string $active = 'dashboard'): void {
     $is = static fn(string $key): bool => $active === $key;
     $in = static fn(array $keys): bool => in_array($active, $keys, true);
-    $grpContent = ['content_noticias', 'content_editais', 'content_defesas', 'content_estagios'];
-    $grpHome = ['carousel', 'tema', 'menu'];
-    $grpAcademic = ['pessoal', 'atendimento_docentes', 'horarios'];
-    $grpPos = ['pos_graduacao', 'pos_publicacoes', 'pos_subsite', 'pos_sections', 'pos_docentes', 'pos_atendimento'];
+    $grpContent = ['content_noticias', 'content_editais'];
+    $grpHome = ['carousel', 'tema', 'menu', 'lab_about', 'lab_pages'];
+    $grpEquipe = ['pessoal'];
     ?>
     <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
+        <style>
+            .app-sidebar .menu-caret {
+                display: inline-block;
+                margin-left: .35rem;
+                font-size: .8rem;
+                opacity: .9;
+                transition: transform .2s ease;
+            }
+            .app-sidebar .menu-open > .nav-link .menu-caret {
+                transform: rotate(90deg);
+            }
+        </style>
         <div class="sidebar-brand">
             <a href="/admin/dashboard.php" class="brand-link text-decoration-none"><span class="brand-text fw-light">Portal Admin</span></a>
         </div>
@@ -1988,42 +2375,28 @@ function render_admin_sidebar(string $active = 'dashboard'): void {
                     <li class="nav-item"><a href="/admin/dashboard.php" class="nav-link<?= $is('dashboard') ? ' active' : '' ?>"><p>Dashboard</p></a></li>
 
                     <li class="nav-item<?= $in($grpContent) ? ' menu-open' : '' ?>">
-                        <a href="#" class="nav-link<?= $in($grpContent) ? ' active' : '' ?>"><p>Conteudo <i class="nav-arrow"></i></p></a>
+                        <a href="#" class="nav-link<?= $in($grpContent) ? ' active' : '' ?>"><p>Conteudo <span class="menu-caret" aria-hidden="true">▸</span></p></a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item"><a href="/admin/content.php?type=noticias" class="nav-link<?= $is('content_noticias') ? ' active' : '' ?>"><p>Noticias</p></a></li>
                             <li class="nav-item"><a href="/admin/content.php?type=editais" class="nav-link<?= $is('content_editais') ? ' active' : '' ?>"><p>Editais</p></a></li>
-                            <li class="nav-item"><a href="/admin/content.php?type=defesas" class="nav-link<?= $is('content_defesas') ? ' active' : '' ?>"><p>Defesas</p></a></li>
-                            <li class="nav-item"><a href="/admin/content.php?type=estagios" class="nav-link<?= $is('content_estagios') ? ' active' : '' ?>"><p>Estagios e Empregos</p></a></li>
                         </ul>
                     </li>
 
                     <li class="nav-item<?= $in($grpHome) ? ' menu-open' : '' ?>">
-                        <a href="#" class="nav-link<?= $in($grpHome) ? ' active' : '' ?>"><p>Home e Visual <i class="nav-arrow"></i></p></a>
+                        <a href="#" class="nav-link<?= $in($grpHome) ? ' active' : '' ?>"><p>Home e Visual <span class="menu-caret" aria-hidden="true">▸</span></p></a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item"><a href="/admin/carousel.php" class="nav-link<?= $is('carousel') ? ' active' : '' ?>"><p>Carrossel Home</p></a></li>
+                            <li class="nav-item"><a href="/admin/laboratorio-sobre.php" class="nav-link<?= $is('lab_about') ? ' active' : '' ?>"><p>Pagina O Laboratorio</p></a></li>
+                            <li class="nav-item"><a href="/admin/laboratorio-paginas.php" class="nav-link<?= $is('lab_pages') ? ' active' : '' ?>"><p>Paginas do Laboratorio</p></a></li>
                             <li class="nav-item"><a href="/admin/tema.php" class="nav-link<?= $is('tema') ? ' active' : '' ?>"><p>Tema e Cores</p></a></li>
                             <li class="nav-item"><a href="/admin/menu.php" class="nav-link<?= $is('menu') ? ' active' : '' ?>"><p>Menu Principal</p></a></li>
                         </ul>
                     </li>
 
-                    <li class="nav-item<?= $in($grpAcademic) ? ' menu-open' : '' ?>">
-                        <a href="#" class="nav-link<?= $in($grpAcademic) ? ' active' : '' ?>"><p>Academico <i class="nav-arrow"></i></p></a>
+                    <li class="nav-item<?= $in($grpEquipe) ? ' menu-open' : '' ?>">
+                        <a href="#" class="nav-link<?= $in($grpEquipe) ? ' active' : '' ?>"><p>Equipe <span class="menu-caret" aria-hidden="true">▸</span></p></a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item"><a href="/admin/pessoal.php" class="nav-link<?= $is('pessoal') ? ' active' : '' ?>"><p>Pessoal</p></a></li>
-                            <li class="nav-item"><a href="/admin/atendimento-docentes.php" class="nav-link<?= $is('atendimento_docentes') ? ' active' : '' ?>"><p>Atendimento Docentes</p></a></li>
-                            <li class="nav-item"><a href="/admin/horarios.php" class="nav-link<?= $is('horarios') ? ' active' : '' ?>"><p>Horarios de Aula</p></a></li>
-                        </ul>
-                    </li>
-
-                    <li class="nav-item<?= $in($grpPos) ? ' menu-open' : '' ?>">
-                        <a href="#" class="nav-link<?= $in($grpPos) ? ' active' : '' ?>"><p>Pos-graduacao <i class="nav-arrow"></i></p></a>
-                        <ul class="nav nav-treeview">
-                            <li class="nav-item"><a href="/admin/pos-graduacao.php" class="nav-link<?= $is('pos_graduacao') ? ' active' : '' ?>"><p>Pagina principal</p></a></li>
-                            <li class="nav-item"><a href="/admin/pos-publicacoes.php?tipo=noticias" class="nav-link<?= $is('pos_publicacoes') ? ' active' : '' ?>"><p>Noticias/Editais</p></a></li>
-                            <li class="nav-item"><a href="/admin/pos-secoes.php" class="nav-link<?= $is('pos_sections') ? ' active' : '' ?>"><p>Pesquisa e Extensao</p></a></li>
-                            <li class="nav-item"><a href="/admin/pessoal.php?scope=pos" class="nav-link<?= $is('pos_docentes') ? ' active' : '' ?>"><p>Docentes da Pos</p></a></li>
-                            <li class="nav-item"><a href="/admin/atendimento-docentes.php?scope=pos" class="nav-link<?= $is('pos_atendimento') ? ' active' : '' ?>"><p>Atendimento da Pos</p></a></li>
-                            <li class="nav-item"><a href="/admin/pos-subsite.php" class="nav-link<?= $is('pos_subsite') ? ' active' : '' ?>"><p>Subsite Pos</p></a></li>
                         </ul>
                     </li>
 
@@ -2239,12 +2612,37 @@ function ensure_people_items_scope_column(): void {
         // Coluna ja existente ou banco ainda sem a tabela.
     }
 }
+function ensure_people_items_role_type_enum(): void {
+    static $ready = false;
+    if ($ready) {
+        return;
+    }
+    $ready = true;
+    try {
+        db()->exec("ALTER TABLE people_items MODIFY COLUMN role_type ENUM('docente','funcionario','estudante_graduacao','estudante_pos') NOT NULL DEFAULT 'docente'");
+    } catch (Throwable $e) {
+        // Banco ainda sem tabela ou alteracao nao necessaria.
+    }
+}
+function people_role_type_options(): array {
+    return [
+        'docente' => 'Docente',
+        'funcionario' => 'Funcionario',
+        'estudante_graduacao' => 'Estudante da Graduacao',
+        'estudante_pos' => 'Estudante da Pos',
+    ];
+}
+function people_role_type_label(string $roleType): string {
+    $options = people_role_type_options();
+    return $options[$roleType] ?? 'Pessoa';
+}
 function fetch_people_items(string $type, string $scope = 'principal'): array {
-    if (!in_array($type, ['docente', 'funcionario'], true)) {
+    if (!array_key_exists($type, people_role_type_options())) {
         return [];
     }
     $scopeNorm = people_scope_normalize($scope);
     ensure_people_items_scope_column();
+    ensure_people_items_role_type_enum();
     $sql = "SELECT slug, name, role_type, position, degree, website_url, lattes_url, email, phone, room, interests, bio, photo_url
             FROM people_items
             WHERE role_type = :role_type AND scope = :scope

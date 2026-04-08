@@ -6,26 +6,6 @@ require_once __DIR__ . '/../includes/config.php';
 require_admin_permission('manage_content');
 
 function admin_content_meta(string $type): array {
-    if ($type === 'defesas') {
-        return [
-            'type' => 'defesas',
-            'table' => 'defesa_items',
-            'title' => 'Defesas',
-            'default_category' => 'Defesas',
-            'badge_class' => 'text-bg-info',
-            'public_url' => '/noticias/defesas.php',
-        ];
-    }
-    if ($type === 'estagios') {
-        return [
-            'type' => 'estagios',
-            'table' => 'job_items',
-            'title' => 'Estagios e Empregos',
-            'default_category' => 'Carreiras',
-            'badge_class' => 'text-bg-dark',
-            'public_url' => '/noticias/estagios-empregos.php',
-        ];
-    }
     if ($type === 'editais') {
         return [
             'type' => 'editais',
@@ -74,7 +54,7 @@ function admin_unique_slug(PDO $pdo, string $table, string $baseSlug, ?int $igno
     }
 }
 
-$allowedTypes = ['noticias', 'editais', 'defesas', 'estagios'];
+$allowedTypes = ['noticias', 'editais'];
 $typeInput = (string)($_GET['type'] ?? 'noticias');
 $type = in_array($typeInput, $allowedTypes, true) ? $typeInput : 'noticias';
 $sidebarActive = 'content_' . $type;

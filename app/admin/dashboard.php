@@ -15,8 +15,6 @@ function admin_count_table(string $table): int {
 
 $newsCount = admin_count_table('news_items');
 $editaisCount = admin_count_table('edital_items');
-$defesasCount = admin_count_table('defesa_items');
-$jobsCount = admin_count_table('job_items');
 $peopleCount = admin_count_table('people_items');
 ?>
 <!doctype html>
@@ -80,35 +78,6 @@ $peopleCount = admin_count_table('people_items');
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="card card-primary card-outline">
-                            <div class="card-header"><h3 class="card-title">Horarios de Aula</h3></div>
-                            <div class="card-body">
-                                <p class="mb-2">Edite e importe os horarios de alunos pela pagina oficial antiga.</p>
-                                <a class="btn btn-primary" href="/admin/horarios.php">Gerenciar Horarios</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card card-info card-outline">
-                            <div class="card-header"><h3 class="card-title">Defesas</h3></div>
-                            <div class="card-body">
-                                <p class="display-6 mb-2"><?= e((string)$defesasCount) ?></p>
-                                <p class="text-secondary">Registros cadastrados.</p>
-                                <a class="btn btn-info text-white" href="/admin/content.php?type=defesas">Gerenciar Defesas</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card card-dark card-outline">
-                            <div class="card-header"><h3 class="card-title">Estagios e Empregos</h3></div>
-                            <div class="card-body">
-                                <p class="display-6 mb-2"><?= e((string)$jobsCount) ?></p>
-                                <p class="text-secondary">Registros cadastrados.</p>
-                                <a class="btn btn-dark" href="/admin/content.php?type=estagios">Gerenciar Estagios e Empregos</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
                         <div class="card card-warning card-outline">
                             <div class="card-header"><h3 class="card-title">Pessoal</h3></div>
                             <div class="card-body">
@@ -122,35 +91,8 @@ $peopleCount = admin_count_table('people_items');
                         <div class="card card-success card-outline">
                             <div class="card-header"><h3 class="card-title">Menu Principal</h3></div>
                             <div class="card-body">
-                                <p class="mb-2">Edite os itens de navegacao de Graduacao e Pos-graduacao.</p>
+                                <p class="mb-2">Edite os itens de navegacao principais do site.</p>
                                 <a class="btn btn-success" href="/admin/menu.php">Gerenciar Menu</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card card-info card-outline">
-                            <div class="card-header"><h3 class="card-title">Pos-graduacao</h3></div>
-                            <div class="card-body">
-                                <p class="mb-2">Edite secoes da pagina de pos e gerencie egressos por ano.</p>
-                                <a class="btn btn-info text-white" href="/admin/pos-graduacao.php">Gerenciar Pos-graduacao</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card card-danger card-outline">
-                            <div class="card-header"><h3 class="card-title">Publicacoes da Pos</h3></div>
-                            <div class="card-body">
-                                <p class="mb-2">Postagem separada de noticias e editais da pos-graduacao.</p>
-                                <a class="btn btn-danger" href="/admin/pos-publicacoes.php?tipo=noticias">Gerenciar Noticias/Editais da Pos</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card card-dark card-outline">
-                            <div class="card-header"><h3 class="card-title">Subsite Pos</h3></div>
-                            <div class="card-body">
-                                <p class="mb-2">Importe e gerencie paginas institucionais da pos antiga em /pos.</p>
-                                <a class="btn btn-dark" href="/admin/pos-subsite.php">Gerenciar Subsite Pos</a>
                             </div>
                         </div>
                     </div>

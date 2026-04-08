@@ -1,7 +1,7 @@
 <?php
 require __DIR__ . '/../includes/config.php';
 
-$pageSlug = 'cursos';
+$pageSlug = 'eventos';
 $content = laboratory_page_get($pageSlug);
 
 $perPage = 9;
@@ -15,7 +15,7 @@ $currentPage = (int)($list['current_page'] ?? 1);
 $totalPages = (int)($list['total_pages'] ?? 1);
 $items = (array)($list['items'] ?? []);
 
-function build_laboratorio_page_url(string $slug, int $year, int $page): string {
+function build_laboratorio_page_url_eventos(string $slug, int $year, int $page): string {
     return laboratory_page_build_url($slug, $year, $page);
 }
 
@@ -34,7 +34,7 @@ page_header((string)$content['title']);
     <?php if (!empty($years)): ?>
         <div class="d-flex flex-wrap gap-2 mb-4">
             <?php foreach ($years as $year): ?>
-                <a class="btn btn-sm <?= $year === $selectedYear ? 'btn-primary' : 'btn-outline-primary' ?>" href="<?= e(build_laboratorio_page_url($pageSlug, (int)$year, 1)) ?>">
+                <a class="btn btn-sm <?= $year === $selectedYear ? 'btn-primary' : 'btn-outline-primary' ?>" href="<?= e(build_laboratorio_page_url_eventos($pageSlug, (int)$year, 1)) ?>">
                     <?= e((string)$year) ?>
                 </a>
             <?php endforeach; ?>
@@ -78,27 +78,27 @@ page_header((string)$content['title']);
         <nav class="mt-4" aria-label="Paginacao de itens">
             <ul class="pagination">
                 <li class="page-item<?= $currentPage <= 1 ? ' disabled' : '' ?>">
-                    <a class="page-link" href="<?= e(build_laboratorio_page_url($pageSlug, $selectedYear, max(1, $currentPage - 1))) ?>">Anterior</a>
+                    <a class="page-link" href="<?= e(build_laboratorio_page_url_eventos($pageSlug, $selectedYear, max(1, $currentPage - 1))) ?>">Anterior</a>
                 </li>
                 <?php if ($windowStart > 1): ?>
-                    <li class="page-item"><a class="page-link" href="<?= e(build_laboratorio_page_url($pageSlug, $selectedYear, 1)) ?>">1</a></li>
+                    <li class="page-item"><a class="page-link" href="<?= e(build_laboratorio_page_url_eventos($pageSlug, $selectedYear, 1)) ?>">1</a></li>
                 <?php endif; ?>
                 <?php if ($windowStart > 2): ?>
                     <li class="page-item disabled"><span class="page-link">...</span></li>
                 <?php endif; ?>
                 <?php for ($pg = $windowStart; $pg <= $windowEnd; $pg++): ?>
                     <li class="page-item<?= $pg === $currentPage ? ' active' : '' ?>">
-                        <a class="page-link" href="<?= e(build_laboratorio_page_url($pageSlug, $selectedYear, $pg)) ?>"><?= e((string)$pg) ?></a>
+                        <a class="page-link" href="<?= e(build_laboratorio_page_url_eventos($pageSlug, $selectedYear, $pg)) ?>"><?= e((string)$pg) ?></a>
                     </li>
                 <?php endfor; ?>
                 <?php if ($windowEnd < $totalPages - 1): ?>
                     <li class="page-item disabled"><span class="page-link">...</span></li>
                 <?php endif; ?>
                 <?php if ($windowEnd < $totalPages): ?>
-                    <li class="page-item"><a class="page-link" href="<?= e(build_laboratorio_page_url($pageSlug, $selectedYear, $totalPages)) ?>"><?= e((string)$totalPages) ?></a></li>
+                    <li class="page-item"><a class="page-link" href="<?= e(build_laboratorio_page_url_eventos($pageSlug, $selectedYear, $totalPages)) ?>"><?= e((string)$totalPages) ?></a></li>
                 <?php endif; ?>
                 <li class="page-item<?= $currentPage >= $totalPages ? ' disabled' : '' ?>">
-                    <a class="page-link" href="<?= e(build_laboratorio_page_url($pageSlug, $selectedYear, min($totalPages, $currentPage + 1))) ?>">Proxima</a>
+                    <a class="page-link" href="<?= e(build_laboratorio_page_url_eventos($pageSlug, $selectedYear, min($totalPages, $currentPage + 1))) ?>">Proxima</a>
                 </li>
             </ul>
         </nav>

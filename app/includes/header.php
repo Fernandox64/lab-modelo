@@ -65,6 +65,7 @@ if ($topbarEmail === '') {
                 <li class="nav-item"><a class="nav-link" href="/laboratorio/parceiros.php">Parceiros</a></li>
                 <li class="nav-item"><a class="nav-link" href="/laboratorio/tutoriais.php">Tutoriais</a></li>
                 <li class="nav-item"><a class="nav-link" href="/laboratorio/blog.php">Blog</a></li>
+                <li class="nav-item"><a class="nav-link" href="/laboratorio/eventos.php">Eventos</a></li>
             </ul>
 
             <div class="d-flex gap-2">

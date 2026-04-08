@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS job_items (
 CREATE TABLE IF NOT EXISTS people_items (
     id INT AUTO_INCREMENT PRIMARY KEY,
     slug VARCHAR(150) NOT NULL UNIQUE,
-    role_type ENUM('docente','funcionario') NOT NULL DEFAULT 'docente',
+    role_type ENUM('docente','funcionario','estudante_graduacao','estudante_pos') NOT NULL DEFAULT 'docente',
     scope ENUM('principal','pos') NOT NULL DEFAULT 'principal',
     name VARCHAR(180) NOT NULL,
     position VARCHAR(255) NOT NULL,
@@ -98,6 +98,25 @@ CREATE TABLE IF NOT EXISTS research_projects (
     sort_order INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS laboratory_page_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    page_slug VARCHAR(60) NOT NULL,
+    slug VARCHAR(160) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    summary TEXT NOT NULL,
+    category VARCHAR(100) NOT NULL DEFAULT 'Laboratorio',
+    content_html MEDIUMTEXT NOT NULL,
+    image_url VARCHAR(255) DEFAULT NULL,
+    external_url VARCHAR(255) DEFAULT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    sort_order INT NOT NULL DEFAULT 0,
+    published_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_lab_page_slug (page_slug, slug),
+    INDEX idx_lab_page_pub (page_slug, is_active, published_at)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS site_settings (
@@ -163,18 +182,8 @@ CREATE TABLE IF NOT EXISTS ppgcc_pages (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-DELETE FROM news_items
-WHERE slug IN (
-    'portal-em-teste',
-    'horarios-de-aula-disponiveis',
-    'grupo-de-pesquisa-abre-chamada'
-);
-
-DELETE FROM edital_items
-WHERE slug IN (
-    'edital-monitoria-2026-1',
-    'edital-bolsas-extensao'
-);
+DELETE FROM news_items;
+DELETE FROM edital_items;
 
 DELETE FROM defesa_items
 WHERE slug IN (
@@ -188,16 +197,49 @@ WHERE slug IN (
     'vaga-dev-junior-backend'
 );
 
-DELETE FROM people_items
-WHERE role_type = 'docente';
+DELETE FROM people_items;
+DELETE FROM laboratory_page_items;
 
 DELETE FROM research_labs;
 DELETE FROM research_projects;
 
+INSERT INTO laboratory_page_items
+    (page_slug, slug, title, summary, category, content_html, image_url, external_url, is_active, sort_order, published_at)
+VALUES
+    ('projetos', 'proj-visao-computacional-saude', 'Projeto Visao Computacional em Saude', 'Pesquisa aplicada com processamento de imagens para apoio a diagnostico.', 'Pesquisa', '<p>Projeto de pesquisa com foco em visao computacional aplicada a saude, envolvendo alunos de graduacao e pos.</p>', '/assets/cards/noticia-pesquisa.svg', '', 1, 1, '2026-03-20 10:00:00'),
+    ('projetos', 'proj-iot-cidades-inteligentes', 'Projeto IoT para Cidades Inteligentes', 'Desenvolvimento de sensores e analise de dados urbanos em tempo real.', 'Extensao', '<p>Projeto interdisciplinar para monitoramento urbano e prototipagem de solucoes com Internet das Coisas.</p>', '/assets/cards/noticia-portal.svg', '', 1, 2, '2026-02-15 10:00:00'),
+
+    ('publicacoes', 'pub-artigo-redes-neurais-2026', 'Artigo: Redes neurais para classificacao de imagens medicas', 'Publicacao em periodico internacional com resultados do laboratorio.', 'Artigo', '<p>Resumo da publicacao com objetivos, metodologia e principais resultados.</p>', '/assets/cards/noticia-pesquisa.svg', 'https://example.org/artigo-redes-neurais', 1, 1, '2026-03-10 09:00:00'),
+    ('publicacoes', 'pub-trabalho-evento-educacao-2025', 'Trabalho em evento: IA aplicada a educacao', 'Apresentacao em conferencia nacional de computacao aplicada.', 'Evento', '<p>Trabalho apresentado em evento cientifico com participacao de estudantes do laboratorio.</p>', '/assets/cards/noticia-default.svg', 'https://example.org/evento-ia-educacao', 1, 2, '2025-11-21 09:00:00'),
+
+    ('cursos', 'curso-oficina-python-dados', 'Oficina de Python para Analise de Dados', 'Capacitacao introdutoria para estudantes e bolsistas do laboratorio.', 'Capacitacao', '<p>Oficina com fundamentos de Python, limpeza de dados e visualizacao.</p>', '/assets/cards/noticia-portal.svg', '', 1, 1, '2026-03-05 14:00:00'),
+    ('cursos', 'curso-metodologia-pesquisa-aplicada', 'Curso de Metodologia de Pesquisa Aplicada', 'Formacao em desenho experimental e reproducibilidade cientifica.', 'Formacao', '<p>Curso com foco em metodologia cientifica para projetos de graduacao e pos.</p>', '/assets/cards/noticia-pesquisa.svg', '', 1, 2, '2026-02-01 14:00:00'),
+
+    ('parceiros', 'parceria-universidade-federal-a', 'Parceria com Universidade Federal A', 'Cooperacao academica para projetos e coorientacoes.', 'Academico', '<p>Parceria institucional para desenvolvimento de pesquisas colaborativas e intercambio de estudantes.</p>', '/assets/cards/noticia-default.svg', 'https://example.org/parceria-ufa', 1, 1, '2026-03-01 08:30:00'),
+    ('parceiros', 'parceria-empresa-laboratorio-tech', 'Parceria com Laboratorio Tech', 'Transferencia de tecnologia e apoio a infraestrutura de pesquisa.', 'Setor Produtivo', '<p>Parceria para validacao de prototipos, mentorias e cooperacao tecnico-cientifica.</p>', '/assets/cards/noticia-portal.svg', 'https://example.org/parceria-tech', 1, 2, '2026-01-25 08:30:00'),
+
+    ('tutoriais', 'tutorial-git-fluxo-pesquisa', 'Tutorial: Fluxo Git para projetos de pesquisa', 'Guia rapido para versionamento e organizacao de codigo em equipe.', 'Tutorial', '<p>Passo a passo para padronizar branchs, revisoes e versionamento no laboratorio.</p>', '/assets/cards/noticia-default.svg', '', 1, 1, '2026-03-18 16:00:00'),
+    ('tutoriais', 'tutorial-reprodutibilidade-experimentos', 'Tutorial: Reprodutibilidade de experimentos', 'Boas praticas para registro, execucao e replicacao de resultados.', 'Boas Praticas', '<p>Checklist de reproducibilidade para experimentos computacionais do laboratorio.</p>', '/assets/cards/noticia-pesquisa.svg', '', 1, 2, '2026-02-28 16:00:00'),
+
+    ('blog', 'blog-boas-vindas-novos-bolsistas', 'Boas-vindas aos novos bolsistas', 'Laboratorio recebe nova turma de estudantes para o semestre 2026/1.', 'Comunicado', '<p>Mensagem de boas-vindas e apresentacao das frentes de trabalho do laboratorio.</p>', '/assets/cards/noticia-portal.svg', '', 1, 1, '2026-03-22 11:00:00'),
+    ('blog', 'blog-relato-seminario-interno', 'Relato do seminario interno de pesquisa', 'Resumo dos temas apresentados pelos grupos do laboratorio.', 'Evento', '<p>Publicacao com os destaques do seminario interno e proximas acoes planejadas.</p>', '/assets/cards/noticia-pesquisa.svg', '', 1, 2, '2026-03-08 11:00:00'),
+
+    ('eventos', 'evento-workshop-ia-aplicada', 'Workshop de IA Aplicada em Dados Cientificos', 'Workshop presencial para equipe e convidados com foco em pipelines reprodutiveis.', 'Workshop', '<p>Evento tecnico com mini-curso e estudos de caso em IA aplicada a dados cientificos.</p>', '/assets/cards/noticia-pesquisa.svg', '', 1, 1, '2026-04-03 09:00:00'),
+    ('eventos', 'evento-seminario-parcerias-lab', 'Seminario de Parcerias e Cooperacao Academica', 'Encontro com grupos parceiros para apresentar resultados e planejar novas colaboracoes.', 'Seminario', '<p>Seminario aberto do laboratorio para integracao entre universidade e parceiros externos.</p>', '/assets/cards/noticia-portal.svg', '', 1, 2, '2026-03-27 14:00:00')
+ON DUPLICATE KEY UPDATE
+    title = VALUES(title),
+    summary = VALUES(summary),
+    category = VALUES(category),
+    content_html = VALUES(content_html),
+    image_url = VALUES(image_url),
+    external_url = VALUES(external_url),
+    is_active = VALUES(is_active),
+    sort_order = VALUES(sort_order),
+    published_at = VALUES(published_at);
+
 INSERT INTO news_items (slug, title, summary, category, content, image, published_at) VALUES
-('qualificacao-mestrado-eduardo-henke-2026-03-26','Qualificacao de mestrado do discente Eduardo Henke, dia 26/03 as 14:00.','Aviso publicado no acervo de noticias do DECOM-UFOP.','Pesquisa','Comunicado academico referente a qualificacao de mestrado divulgada no portal oficial do departamento.','/assets/cards/noticia-pesquisa.svg','2026-03-26 14:00:00'),
-('horario-aulas-decom-2026-1','Horario das aulas do DECOM 2026-1','Atualizacao institucional com informacoes sobre horarios letivos.','Ensino','Publicacao de referencia para consulta de horarios do semestre no DECOM-UFOP.','/assets/cards/noticia-horarios.svg','2026-03-24 09:00:00'),
-('defesa-doutorado-guilherme-augusto-2026-03-20','Defesa de doutorado do discente Guilherme Augusto, dia 20/03/2026 as 13:00.','Evento academico de pos-graduacao divulgado no site oficial.','Pesquisa','Comunicado sobre defesa de doutorado conforme agenda publicada no portal do DECOM-UFOP.','/assets/cards/noticia-portal.svg','2026-03-20 13:00:00')
+('laboratorio-seleciona-bolsistas-ic-2026-1','Laboratorio abre selecao de bolsistas de iniciacao cientifica (2026/1)','Selecao para estudantes de graduacao atuarem em projetos de pesquisa aplicada.','Pesquisa','O Laboratorio convida estudantes interessados em pesquisa para participar do processo seletivo de iniciacao cientifica do semestre 2026/1.','/assets/cards/noticia-pesquisa.svg','2026-04-01 09:00:00'),
+('seminario-metodologia-cientifica-lab','Laboratorio promove seminario de metodologia cientifica','Evento interno para apresentacao de boas praticas de escrita e reproducibilidade de experimentos.','Eventos','Seminario aberto a estudantes e pesquisadores do departamento para alinhamento de metodos de pesquisa e divulgacao cientifica.','/assets/cards/noticia-portal.svg','2026-03-25 14:30:00')
 ON DUPLICATE KEY UPDATE
     title = VALUES(title),
     summary = VALUES(summary),
@@ -207,9 +249,8 @@ ON DUPLICATE KEY UPDATE
     published_at = VALUES(published_at);
 
 INSERT INTO edital_items (slug, title, summary, category, content, image, published_at) VALUES
-('inicio-matriculas-isoladas-ppgcc-2026-1','Inicio de matriculas em disciplinas isoladas PPGCC - 2026/1','Comunicado academico sobre periodo de matricula em disciplinas isoladas.','Editais','Informacao institucional baseada no acervo de noticias do DECOM-UFOP.','/assets/cards/edital-extensao.svg','2026-03-10 08:00:00'),
-('grade-disciplinas-matricula-2026-1','Grade de disciplinas e datas de matricula 2026/1','Publicacao com datas e organizacao academica do periodo 2026/1.','Editais','Aviso institucional para estudantes sobre oferta e calendario de matriculas.','/assets/cards/edital-monitoria.svg','2026-02-12 10:00:00'),
-('horarios-monitorias-decom','Horarios Monitorias DECOM','Divulgacao dos horarios de monitorias para disciplinas do departamento.','Editais','Comunicado institucional com lista de monitorias disponiveis para consulta.','/assets/cards/edital-monitoria.svg','2025-08-15 09:00:00')
+('edital-bolsa-iniciacao-cientifica-lab-2026-1','Edital de bolsa de iniciacao cientifica do laboratorio (2026/1)','Chamada para selecao de bolsistas em projetos vinculados ao laboratorio e ao departamento.','Editais','Edital com cronograma, criterios de selecao e documentacao exigida para candidatura a bolsa de iniciacao cientifica.','/assets/cards/edital-monitoria.svg','2026-03-20 10:00:00'),
+('edital-monitoria-projetos-laboratorio-2026','Edital de monitoria para apoio a projetos do laboratorio','Selecao de monitor(a) para suporte tecnico e organizacao de atividades de pesquisa.','Editais','O laboratorio publica edital para monitoria de apoio a projetos de pesquisa e extensao em parceria com a universidade.','/assets/cards/edital-extensao.svg','2026-03-12 08:00:00')
 ON DUPLICATE KEY UPDATE
     title = VALUES(title),
     summary = VALUES(summary),
@@ -240,44 +281,16 @@ ON DUPLICATE KEY UPDATE
     image = VALUES(image),
     published_at = VALUES(published_at);
 
-INSERT INTO people_items (slug, role_type, name, position, degree, website_url, lattes_url, email, phone, room, interests, bio, sort_order) VALUES
-('aline-norberta-de-brito','docente','Aline Norberta de Brito','Docente','Doutora em Ciencia da Computacao - Universidade Federal de Minas Gerais (UFMG)','https://www3.decom.ufop.br/decom/inicio/','http://lattes.cnpq.br/','aline.brito@ufop.edu.br','+55 31 3559-1692','Instituto de Ciencias Exatas e Biologicas - Sala 346','Engenharia de Software, incluindo topicos como Qualidade de Software, Manutencao e Evolucao de Software, e Mineracao de Repositorios de Software.','Perfil de docente do DECOM.',1),
-('anderson-almeida-ferreira','docente','Anderson Almeida Ferreira','Docente','Doutor em Ciencia da Computacao - Universidade Federal de Minas Gerais','','http://lattes.cnpq.br/','','','Instituto de Ciencias Exatas e Biologicas - Sala 340','Teoria da Computacao. Bibliotecas Digitais. Bancos de Dados. Gerencia de Dados. Recuperacao de Informacao. Aprendizado de Maquina.','Perfil de docente do DECOM.',2),
-('andre-luiz-carvalho-ottoni','docente','Andre Luiz Carvalho Ottoni','Docente','Doutor em Engenharia Eletrica - Universidade Federal da Bahia','','http://lattes.cnpq.br/','','+55 31 35591330','Instituto de Ciencias Exatas e Biologicas - Sala 326','Inteligencia Artificial, Aprendizado Profundo, Aprendizado por Reforco, AutoML e Robotica Inteligente.','Perfil de docente do DECOM.',3),
-('andrea-gomes-campos','docente','Andrea Gomes Campos','Docente','Doutora em Fisica Computacional - Universidade de Sao Paulo/Sao Carlos','','http://lattes.cnpq.br/','','+55 (31) 3559 1640','Instituto de Ciencias Exatas e Biologicas - Sala 64','Visao Computacional. Analise e processamento de imagens. Simulacao computacional. Reconhecimento de padroes.','Perfil de docente do DECOM.',4),
-('carlos-frederico-m-c-cavalcanti','docente','Carlos Frederico M. C. Cavalcanti','Docente','Doutor em Ciencia da Computacao; Mestre em Ciencia da Computacao; Pos-Graduacao em Analise de Sistemas; Graduacao em Engenharia Eletrica/Eletronica','','http://lattes.cnpq.br/','','+55 (31) 3559-1213','Instituto de Ciencias Exatas e Biologicas - Sala COM09','Estruturas de Ledgers, blockchain, DAGs, arquiteturas descentralizadas, criptografia e seguranca de redes, sistemas distribuidos.','Perfil de docente do DECOM.',5),
-('carlos-henrique-gomes-ferreira','docente','Carlos Henrique Gomes Ferreira','Docente','Doutorado em Ciencias da Computacao (UFMG) e em Electrical, Electronics and Communications Engineering (Politecnico di Torino, Italia - co-tutela)','','http://lattes.cnpq.br/','','','','Redes Complexas, Aprendizado de Maquina, Comportamento do Usuario, Processamento de Linguagem Natural.','Perfil de docente do DECOM.',6),
-('daniel-ludovico-guidoni','docente','Daniel Ludovico Guidoni','Docente','Doutor em Ciencia da Computacao pela Universidade Federal de Minas Gerais','','http://lattes.cnpq.br/','','','','Redes de Computadores, Comunicacao Sem Fio, Cidades Inteligentes, Redes Veiculares e Ciencia de Dados.','Perfil de docente do DECOM.',7),
-('dayanne-gouveia-coelho','docente','Dayanne Gouveia Coelho','Docente','Doutora em Engenharia Eletrica - Universidade Federal de Minas Gerais (UFMG)','https://www3.decom.ufop.br/decom/inicio/','http://lattes.cnpq.br/','','+55 (31) 3559-1333','Instituto de Ciencias Exatas e Biologicas - Sala COM 46','Otimizacao Multi-objetivo. Meta-heuristicas. Tecnologias de apoio a aprendizagem.','Perfil de docente do DECOM.',8),
-('eduardo-jose-da-silva-luz','docente','Eduardo Jose da Silva Luz','Docente','Doutor em Ciencia da Computacao - Universidade Federal de Ouro Preto','https://www3.decom.ufop.br/decom/inicio/','http://lattes.cnpq.br/','','+55 31 35591330','Instituto de Ciencias Exatas e Biologicas - Sala 342 ICEB III','Redes neurais artificiais, aprendizado de maquina, visao computacional, reconhecimento de padroes e sistemas embarcados.','Perfil de docente do DECOM.',9),
-('fernanda-sumika-hojo-de-souza','docente','Fernanda Sumika Hojo de Souza','Docente','Doutora em Ciencia da Computacao pela Universidade Federal de Minas Gerais (UFMG)','','http://lattes.cnpq.br/','','','','Otimizacao Combinatoria, Programacao Inteira, Heuristicas, Analise de Dados, Cidades Inteligentes, Virtualizacao de Redes, Aplicacoes em saude.','Perfil de docente do DECOM.',10),
-('fernando-cortez-sica','docente','Fernando Cortez Sica','Docente','Doutor em Engenharia Eletrica (UFMG); Mestre em Engenharia Eletrica (UNICAMP)','','http://lattes.cnpq.br/','','','Instituto de Ciencias Exatas e Biologicas - Sala COM13 (ICEB 3)','Sistemas de Computacao.','Perfil de docente do DECOM.',11),
-('gladston-juliano-prates-moreira','docente','Gladston Juliano Prates Moreira','Docente','Doutor em Engenharia Eletrica, Mestre e Bacharel em Matematica - UFMG','https://www3.decom.ufop.br/decom/inicio/','http://lattes.cnpq.br/','','+55 (31) 3559-1330','Instituto de Ciencias Exatas e Biologicas - Sala 342 - ICEB III','Otimizacao Multi-objetivo, Modelos Analiticos e de Simulacao, Reconhecimento de Padroes, Computacao Evolutiva, Estatistica Espacial.','Perfil de docente do DECOM.',12),
-('guilherme-tavares-de-assis','docente','Guilherme Tavares de Assis','Docente','Doutor em Ciencia da Computacao - DCC/UFMG, 2008','https://www3.decom.ufop.br/decom/inicio/','http://lattes.cnpq.br/','','+55 (31) 3559-1692','Instituto de Ciencias Exatas e Biologicas - Sala COM17','Banco de Dados, Gerencia de Dados, Biblioteca Digital, Recuperacao de Informacao, Coleta de Paginas Web, Algoritmos e Estruturas de Dados, Tecnologia Educacional.','Perfil de docente do DECOM.',13),
-('guillermo-camara-chavez','docente','Guillermo Camara Chavez','Docente','Doutor em Ciencia da Computacao - Universidade Federal de Minas Gerais','https://www3.decom.ufop.br/decom/inicio/','http://lattes.cnpq.br/','','','Instituto de Ciencias Exatas e Biologicas - Sala COM09','Processamento digital em video. Reconhecimento de padroes invariantes. Redes neurais.','Perfil de docente do DECOM.',14),
-('gustavo-peixoto-silva','docente','Gustavo Peixoto Silva','Docente','Doutor em Engenharia de Transportes - Universidade de Sao Paulo','https://www3.decom.ufop.br/decom/inicio/','http://lattes.cnpq.br/','','','Instituto de Ciencias Exatas e Biologicas - Sala COM05','Algoritmos de Fluxo em Rede. Otimizacao Combinatoria. Otimizacao de Transporte.','Perfil de docente do DECOM.',15),
-('ivair-ramos-silva','docente','Ivair Ramos Silva','Docente','Doutorado em Estatistica - Universidade Federal de Minas Gerais','','http://lattes.cnpq.br/','','','','Metodos Monte Carlo, Otimizacao em Analise Sequencial, Analise em Alta Dimensao, Estatistica Espacial e Inferencia em Processos Estocasticos.','Perfil de docente do DECOM.',16),
-('jadson-castro-gertrudes','docente','Jadson Castro Gertrudes','Docente','Doutor em Ciencias da Computacao e Matematica Computacional pela Universidade de Sao Paulo (2019)','','http://lattes.cnpq.br/','','+55 (31)3559-1319','Instituto de Ciencias Exatas e Biologicas - Sala 18 (ICEB III)','Aprendizado supervisionado, nao supervisionado e semissupervisionado; analise quantitativa/qualitativa entre estrutura quimica e atividade biologica.','Perfil de docente do DECOM.',17),
-('jose-romildo-malaquias','docente','Jose Romildo Malaquias','Docente','Doutor em Engenharia Eletrica - Universidade Federal de Uberlandia; Mestre em Ciencias - ITA','https://www3.decom.ufop.br/decom/inicio/','http://lattes.cnpq.br/','','+55 (31) 3559-1645','Instituto de Ciencias Exatas e Biologicas - Sala ICEB 3 Sala 21','Linguagens de programacao.','Perfil de docente do DECOM.',18),
-('joubert-de-castro-lima','docente','Joubert de Castro Lima','Docente','Doutor em Engenharia Eletronica e Computacao - ITA','https://www3.decom.ufop.br/decom/inicio/','http://lattes.cnpq.br/','','','Instituto de Ciencias Exatas e Biologicas - Sala COM15','Sistemas Distribuidos e Banco de Dados.','Perfil de docente do DECOM.',19),
-('marcelo-luiz-silva','docente','Marcelo Luiz Silva','Docente','Mestre em Engenharia Eletrica - Universidade Federal de Uberlandia','https://www3.decom.ufop.br/decom/inicio/','http://lattes.cnpq.br/','','','Instituto de Ciencias Exatas e Biologicas - Sala COM17','Realidade virtual. Informatica na educacao.','Perfil de docente do DECOM.',20),
-('marco-antonio-moreira-de-carvalho','docente','Marco Antonio Moreira de Carvalho','Docente','Doutor em Engenharia Eletronica e Computacao - ITA','https://www3.decom.ufop.br/decom/inicio/','http://lattes.cnpq.br/','','+55 (31) 3559-1663','Instituto de Ciencias Exatas e Biologicas - Sala COM45','Otimizacao Combinatoria. Pesquisa Operacional. Heuristicas ad hoc. Metaheuristicas.','Perfil de docente do DECOM.',21),
-('pablo-luiz-araujo-munhoz','docente','Pablo Luiz Araujo Munhoz','Docente','Doutor em Computacao pela UFF e pela Universite d''Avignon et de Pays de Vaucluse (Franca) (2017)','','http://lattes.cnpq.br/','','+55 (31) 3889-1666','Instituto de Ciencias Exatas e Biologicas - Sala 374','Pesquisa Operacional; Otimizacao Combinatoria; Meta-heuristicas.','Perfil de docente do DECOM.',22),
-('pedro-henrique-lopes-silva','docente','Pedro Henrique Lopes Silva','Docente','Doutor em Ciencia da Computacao pela UFOP - 2022','','http://lattes.cnpq.br/','','+55 31 3559-1303','Instituto de Ciencias Exatas e Biologicas - Sala 354 ICEB III','Deep Learning, Otimizacao Multiobjetivo e Metric Learning.','Perfil de docente do DECOM.',23),
-('puca-huachi-vaz-penna','docente','Puca Huachi Vaz Penna','Docente','Doutor em Computacao pela Universidade Federal Fluminense (2013)','https://www3.decom.ufop.br/decom/inicio/','http://lattes.cnpq.br/','','','','Pesquisa Operacional; Otimizacao Combinatoria; Meta-heuristicas; Problema de Roteamento de Veiculos.','Perfil de docente do DECOM.',24),
-('rafael-alves-bonfim-de-queiroz','docente','Rafael Alves Bonfim de Queiroz','Docente','Doutor em Modelagem Computacional - LNCC','','http://lattes.cnpq.br/','','','','Matematica Computacional, Modelagem de Sistemas Fisiologicos, Dinamica dos Fluidos Computacional, Scientific Machine Learning e Explainable AI.','Perfil de docente do DECOM.',25),
-('reinaldo-silva-fortes','docente','Reinaldo Silva Fortes','Docente','Doutor em Ciencia da Computacao - UFMG','https://www3.decom.ufop.br/decom/inicio/','http://lattes.cnpq.br/','','+55 (31) 3559-1327','Instituto de Ciencias Exatas e Biologicas - Sala 358','Mineracao de Dados. Recuperacao da Informacao. Sistemas de Recomendacao. Televisao Interativa. Ensino de Programacao e Pensamento Computacional.','Perfil de docente do DECOM.',26),
-('ricardo-augusto-rabelo-oliveira','docente','Ricardo Augusto Rabelo Oliveira','Docente','Doutor em Ciencia da Computacao - Universidade Federal de Minas Gerais','https://www3.decom.ufop.br/decom/inicio/','http://lattes.cnpq.br/','','','Instituto de Ciencias Exatas e Biologicas - Sala COM15','Computacao Movel. Redes sem fio. Sistemas Embarcados. Sistemas operacionais. Arquitetura de computadores.','Perfil de docente do DECOM.',27),
-('rodrigo-cesar-pedrosa-silva','docente','Rodrigo Cesar Pedrosa Silva','Docente','Ph.D. em Engenharia Eletrica - McGill University (Canada), 2018','','http://lattes.cnpq.br/','','','','Aprendizado de maquina, soft-computing, otimizacao nao-linear e multi-objetivo, inteligencia computacional.','Perfil de docente do DECOM.',28),
-('rodrigo-geraldo-ribeiro','docente','Rodrigo Geraldo Ribeiro','Docente','Doutor em Ciencia da Computacao - Universidade Federal de Minas Gerais','https://www3.decom.ufop.br/decom/inicio/','http://lattes.cnpq.br/','','','','Teoria de tipos, projeto e implementacao de linguagens de programacao e verificacao formal.','Perfil de docente do DECOM.',29),
-('saul-emanuel-delabrida-silva','docente','Saul Emanuel Delabrida Silva','Docente','Doutor em Ciencia da Computacao - DECOM/UFOP, 2018','https://www3.decom.ufop.br/decom/inicio/','http://lattes.cnpq.br/','','','Instituto de Ciencias Exatas e Biologicas - Sala 358','Computacao Vestivel, Realidade Aumentada, Realidade Virtual, Computacao Ubiqua, Industria 4.0, IHC.','Perfil de docente do DECOM.',30),
-('tiago-garcia-de-senna-carneiro','docente','Tiago Garcia de Senna Carneiro','Docente','Doutor em Computacao Aplicada - INPE','https://www3.decom.ufop.br/decom/inicio/','http://lattes.cnpq.br/','','','Instituto de Ciencias Exatas e Biologicas - Sala COM13','Computacao cientifica. Modelagem analitica e de simulacao. Geoinformatica. Desenvolvimento de Software. Inovacao tecnologica.','Perfil de docente do DECOM.',31),
-('valeria-de-carvalho-santos','docente','Valeria de Carvalho Santos','Docente','','','http://lattes.cnpq.br/','','+55 3359-1640','Instituto de Ciencias Exatas e Biologicas - Sala 362','Aprendizado de Maquina, Algoritmos Evolutivos, Robotica.','Perfil de docente do DECOM.',32),
-('vander-luis-de-souza-freitas','docente','Vander Luis de Souza Freitas','Docente','Doutorado em Computacao Aplicada - INPE','https://www3.decom.ufop.br/decom/inicio/','http://lattes.cnpq.br/','','+55 (31) 3559-1320','Instituto de Ciencias Exatas e Biologicas - Sala 348','Redes Complexas, Aprendizado de Maquina e Sistemas Dinamicos.','Perfil de docente do DECOM.',33),
-('vinicius-antonio-de-oliveira-martins','docente','Vinicius Antonio de Oliveira Martins','Docente','Mestre em Engenharia Eletrica - Universidade de Sao Paulo (USP)','','http://lattes.cnpq.br/','','+55 (31) 3559-1301','Instituto de Ciencias Exatas e Biologicas - Sala 13','Sistemas, Sistemas Embarcados e Tempo Real, Projeto de Circuitos Integrados, Verificacao de Circuitos Integrados.','Perfil de docente do DECOM.',34),
-('mariana-souza-almeida','funcionario','Mariana Souza Almeida','Secretaria Administrativa','','','','mariana.almeida@ufop.edu.br','+55 31 3559-1692','Instituto de Ciencias Exatas e Biologicas','Atendimento academico e administrativo.','Atendimento academico e administrativo do departamento.',100)
+INSERT INTO people_items (slug, role_type, scope, name, position, degree, website_url, lattes_url, email, phone, room, interests, bio, sort_order) VALUES
+('ana-luiza-costa','docente','principal','Ana Luiza Costa','Docente Pesquisadora','Doutora em Ciencia da Computacao','','http://lattes.cnpq.br/','ana.costa@universidade.br','(31) 3559-1101','Laboratorio - Sala 201','Inteligencia artificial e ciencia de dados.','Atua em projetos de IA aplicada no laboratorio.',1),
+('marcos-vinicius-lima','funcionario','principal','Marcos Vinicius Lima','Tecnico de Laboratorio','','','','marcos.lima@universidade.br','(31) 3559-1102','Laboratorio - Sala 203','Suporte de infraestrutura e equipamentos.','Responsavel pelo suporte tecnico do laboratorio.',2),
+('beatriz-oliveira-santos','estudante_graduacao','principal','Beatriz Oliveira Santos','Estudante de Graduacao (IC)','Graduacao em Ciencia da Computacao','','','beatriz.santos@aluno.universidade.br','','','Visao computacional e aprendizado profundo.','Bolsista de iniciacao cientifica do laboratorio.',3),
+('caio-henrique-pereira','estudante_graduacao','principal','Caio Henrique Pereira','Estudante de Graduacao (IC)','Graduacao em Sistemas de Informacao','','','caio.pereira@aluno.universidade.br','','','Engenharia de software e dados.','Participa de projeto de pesquisa aplicada.',4),
+('juliana-mendes-araujo','estudante_pos','principal','Juliana Mendes Araujo','Mestranda','Mestrado em Computacao','','','juliana.araujo@pos.universidade.br','','Laboratorio - Sala 205','Mineracao de dados e NLP.','Discente de pos vinculada ao laboratorio.',5),
+('rodrigo-almeida-ferraz','estudante_pos','principal','Rodrigo Almeida Ferraz','Doutorando','Doutorado em Computacao','','','rodrigo.ferraz@pos.universidade.br','','Laboratorio - Sala 206','Otimizacao e aprendizado de maquina.','Discente de doutorado em projeto colaborativo.',6)
 ON DUPLICATE KEY UPDATE
     role_type = VALUES(role_type),
+    scope = VALUES(scope),
     name = VALUES(name),
     position = VALUES(position),
     degree = VALUES(degree),

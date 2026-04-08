@@ -56,6 +56,15 @@ body {
     box-shadow: 0 10px 24px rgba(17, 31, 162, .14);
 }
 
+.navbar .dropdown-toggle::after {
+    border: 0;
+    content: "▾";
+    font-size: .72rem;
+    line-height: 1;
+    margin-left: .35rem;
+    vertical-align: middle;
+}
+
 .navbar .dropdown-item:hover,
 .navbar .dropdown-item:focus {
     background: rgba(83, 203, 243, .2);
@@ -302,4 +311,49 @@ body {
 
 footer.border-top {
     border-top-color: rgba(84, 120, 255, .25) !important;
+}
+
+.site-shortcuts {
+    position: fixed;
+    top: 9rem;
+    right: 1rem;
+    width: 220px;
+    z-index: 1020;
+    background: #fff;
+    border: 1px solid rgba(84, 120, 255, .28);
+    border-radius: .8rem;
+    box-shadow: 0 12px 26px rgba(17, 31, 162, .14);
+    padding: .85rem;
+}
+
+.site-shortcuts-title {
+    font-size: .9rem;
+    font-weight: 700;
+    color: var(--decom-navy);
+    margin-bottom: .55rem;
+}
+
+.site-shortcuts-link {
+    display: block;
+    text-decoration: none;
+    color: var(--decom-navy);
+    border: 1px solid #981b4a;
+    border-radius: .35rem;
+    padding: .45rem .6rem;
+    font-size: .92rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: .5rem;
+    background: #fff;
+}
+
+.site-shortcuts-link.is-primary {
+    background: #981b4a;
+    color: #fff;
+}
+
+.site-shortcuts-link:hover,
+.site-shortcuts-link:focus {
+    background: #981b4a;
+    color: #fff;
 }

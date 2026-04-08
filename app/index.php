@@ -1,12 +1,39 @@
 <?php
 require __DIR__ . '/includes/config.php';
 
-$news = array_slice(demo_news(), 0, 6);
 $heroSlides = hero_carousel_get();
 $topbarDepartmentName = trim(site_setting_get('topbar_department_name', 'Departamento Exemplo'));
 if ($topbarDepartmentName === '') {
     $topbarDepartmentName = 'Departamento Exemplo';
 }
+$sectionOrder = [
+    'projetos',
+    'publicacoes',
+    'tutoriais',
+    'blog',
+    'cursos',
+    'equipe',
+    'parceiros',
+    'eventos',
+];
+$sectionItems = [];
+foreach ($sectionOrder as $slug) {
+    if ($slug === 'equipe') {
+        continue;
+    }
+    $sectionItems[$slug] = laboratory_page_items_latest($slug, 3);
+}
+
+$teamItems = array_slice(
+    array_merge(
+        docentes('principal'),
+        funcionarios('principal'),
+        fetch_people_items('estudante_graduacao', 'principal'),
+        fetch_people_items('estudante_pos', 'principal')
+    ),
+    0,
+    6
+);
 
 page_header('Inicio');
 ?>
@@ -67,7 +94,7 @@ page_header('Inicio');
                         <div class="list-group list-group-flush">
                             <a class="list-group-item list-group-item-action bg-transparent text-white" href="/laboratorio/equipe.php">Equipe do laboratorio</a>
                             <a class="list-group-item list-group-item-action bg-transparent text-white" href="/laboratorio/publicacoes.php">Publicacoes recentes</a>
-                            <a class="list-group-item list-group-item-action bg-transparent text-white" href="/noticias/index.php">Noticias e comunicados</a>
+                            <a class="list-group-item list-group-item-action bg-transparent text-white" href="/laboratorio/eventos.php">Eventos do laboratorio</a>
                             <a class="list-group-item list-group-item-action bg-transparent text-white" href="/contato/index.php">Contato institucional</a>
                         </div>
                     </div>
@@ -78,44 +105,80 @@ page_header('Inicio');
 </section>
 
 <div class="container py-4">
-    <div class="row g-4">
-        <div class="col-lg-8">
-            <h2 class="section-title h4 mb-3">Noticias</h2>
-            <div class="row g-3">
-                <?php foreach ($news as $item): ?>
-                    <div class="col-md-6">
-                        <a class="card card-link h-100 shadow-sm overflow-hidden" href="/noticias/ver.php?slug=<?= urlencode($item['slug']) ?>">
-                            <img class="news-card-cover" src="<?= e(content_image($item)) ?>" alt="<?= e($item['title']) ?>">
-                            <div class="card-body">
-                                <span class="badge text-bg-primary"><?= e($item['category']) ?></span>
-                                <h3 class="h5 mt-2"><?= e($item['title']) ?></h3>
-                                <p class="text-muted mb-0"><?= e($item['summary']) ?></p>
+    <?php foreach ($sectionOrder as $slug): ?>
+        <?php if ($slug === 'equipe'): ?>
+            <section class="mb-5">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <h2 class="section-title h4 mb-0">Equipe</h2>
+                    <a class="btn btn-outline-primary btn-sm" href="/laboratorio/equipe.php">Ver mais</a>
+                </div>
+                <div class="row g-3">
+                    <?php foreach ($teamItems as $item): ?>
+                        <?php
+                            $roleType = (string)($item['role_type'] ?? '');
+                            if ($roleType === '') {
+                                $positionLower = mb_strtolower((string)($item['position'] ?? ''), 'UTF-8');
+                                if (str_contains($positionLower, 'docente') || str_contains($positionLower, 'professor')) {
+                                    $roleType = 'docente';
+                                } elseif (str_contains($positionLower, 'tecnico') || str_contains($positionLower, 'secret')) {
+                                    $roleType = 'funcionario';
+                                }
+                            }
+                            $roleLabel = $roleType !== '' ? people_role_type_label($roleType) : 'Equipe';
+                        ?>
+                        <div class="col-md-6 col-xl-4">
+                            <div class="card news-card h-100">
+                                <img
+                                    class="news-card-cover"
+                                    src="<?= e(person_photo_url($item)) ?>"
+                                    alt="<?= e((string)($item['name'] ?? 'Membro da equipe')) ?>"
+                                >
+                                <div class="card-body d-flex flex-column">
+                                    <span class="badge text-bg-primary mb-2"><?= e($roleLabel) ?></span>
+                                    <h3 class="h5 mb-1"><?= e((string)($item['name'] ?? '')) ?></h3>
+                                    <p class="text-muted mb-2"><?= e((string)($item['position'] ?? '')) ?></p>
+                                    <?php if (!empty($item['interests'])): ?>
+                                        <p class="mb-0"><?= e((string)$item['interests']) ?></p>
+                                    <?php endif; ?>
+                                </div>
                             </div>
-                        </a>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-            <div class="card shadow-sm mb-4">
-                <div class="card-body">
-                    <h2 class="h5">Sobre o laboratorio</h2>
-                    <p class="mb-2">Este modelo foi preparado para apresentar o laboratorio, equipe, producao cientifica e comunicados.</p>
-                    <p class="mb-0 text-muted">A estrutura pode ser usada por qualquer laboratorio vinculado a departamento de universidade federal.</p>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
-            </div>
-            <div class="card shadow-sm mb-4">
-                <div class="card-body">
-                    <h2 class="h5">Acesso rapido</h2>
-                    <div class="d-grid gap-2">
-                        <a class="btn btn-primary btn-sm" href="/laboratorio/equipe.php">Equipe</a>
-                        <a class="btn btn-outline-primary btn-sm" href="/laboratorio/publicacoes.php">Publicacoes</a>
-                        <a class="btn btn-outline-secondary btn-sm" href="/contato/index.php">Contato</a>
-                    </div>
+                <?php if (empty($teamItems)): ?>
+                    <div class="alert alert-warning mb-0">Nenhum item de equipe cadastrado ainda.</div>
+                <?php endif; ?>
+            </section>
+        <?php else: ?>
+            <?php $meta = laboratory_page_get($slug); $items = (array)($sectionItems[$slug] ?? []); ?>
+            <section class="mb-5">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <h2 class="section-title h4 mb-0"><?= e((string)$meta['title']) ?></h2>
+                    <a class="btn btn-outline-primary btn-sm" href="<?= e((string)$meta['public_url']) ?>">Ver mais</a>
                 </div>
-            </div>
-        </div>
-    </div>
+                <div class="row g-3">
+                    <?php foreach ($items as $item): ?>
+                        <?php $itemUrl = '/laboratorio/ver.php?pagina=' . urlencode($slug) . '&slug=' . urlencode((string)$item['slug']); ?>
+                        <div class="col-md-6 col-xl-4">
+                            <a class="card card-link h-100 shadow-sm overflow-hidden" href="<?= e($itemUrl) ?>">
+                                <?php if (!empty($item['image_url'])): ?>
+                                    <img class="news-card-cover" src="<?= e((string)$item['image_url']) ?>" alt="<?= e((string)$item['title']) ?>">
+                                <?php endif; ?>
+                                <div class="card-body d-flex flex-column">
+                                    <span class="badge text-bg-primary"><?= e((string)$item['category']) ?></span>
+                                    <h3 class="h5 mt-2"><?= e((string)$item['title']) ?></h3>
+                                    <p class="text-muted mb-2"><?= e((string)$item['summary']) ?></p>
+                                    <span class="news-cta mt-auto">Ler mais</span>
+                                </div>
+                            </a>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php if (empty($items)): ?>
+                    <div class="alert alert-warning mb-0">Nenhum item cadastrado em <?= e((string)$meta['title']) ?>.</div>
+                <?php endif; ?>
+            </section>
+        <?php endif; ?>
+    <?php endforeach; ?>
 </div>
 <?php page_footer(); ?>

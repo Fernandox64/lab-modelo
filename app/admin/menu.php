@@ -15,8 +15,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $graduacaoLabel = trim((string)($_POST['graduacao_label'] ?? ''));
             $graduacaoUrl = normalize_menu_url((string)($_POST['graduacao_url'] ?? ''), '/ensino/ciencia-computacao.php');
-            $posLabel = trim((string)($_POST['pos_graduacao_label'] ?? ''));
-            $posUrl = normalize_menu_url((string)($_POST['pos_graduacao_url'] ?? ''), '/ensino/pos-graduacao.php');
             $departmentName = trim((string)($_POST['topbar_department_name'] ?? ''));
             $topbarPhone = trim((string)($_POST['topbar_phone'] ?? ''));
             $topbarEmail = trim((string)($_POST['topbar_email'] ?? ''));
@@ -25,13 +23,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $studentCalendarShowHolidays = isset($_POST['student_calendar_show_holidays']) ? '1' : '0';
             $studentCalendarManualEvents = trim((string)($_POST['student_calendar_manual_events'] ?? ''));
 
-            if ($graduacaoLabel === '' || $posLabel === '' || $departmentName === '' || $topbarPhone === '' || $topbarEmail === '') {
+            if ($graduacaoLabel === '' || $departmentName === '' || $topbarPhone === '' || $topbarEmail === '') {
                 $error = 'Preencha todos os campos obrigatorios.';
             } else {
                 site_setting_set('menu_graduacao_label', $graduacaoLabel);
                 site_setting_set('menu_graduacao_url', $graduacaoUrl);
-                site_setting_set('menu_pos_graduacao_label', $posLabel);
-                site_setting_set('menu_pos_graduacao_url', $posUrl);
                 site_setting_set('topbar_department_name', $departmentName);
                 site_setting_set('topbar_phone', $topbarPhone);
                 site_setting_set('topbar_email', $topbarEmail);
@@ -42,8 +38,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 admin_audit_log('menu_update', [
                     'graduacao_label' => $graduacaoLabel,
                     'graduacao_url' => $graduacaoUrl,
-                    'pos_label' => $posLabel,
-                    'pos_url' => $posUrl,
                     'topbar_department_name' => $departmentName,
                     'topbar_phone' => $topbarPhone,
                     'topbar_email' => $topbarEmail,
@@ -62,7 +56,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $graduacao = primary_menu_item('graduacao');
-$posGraduacao = primary_menu_item('pos_graduacao');
 $topbarDepartmentName = site_setting_get('topbar_department_name', 'Departamento Exemplo');
 $topbarPhone = site_setting_get('topbar_phone', SITE_PHONE);
 $topbarEmail = site_setting_get('topbar_email', SITE_EMAIL);
@@ -129,16 +122,6 @@ $studentCalendarManualEvents = site_setting_get('student_calendar_manual_events'
                                 <div class="col-md-8">
                                     <label class="form-label">URL</label>
                                     <input class="form-control" name="graduacao_url" required value="<?= e((string)$graduacao['url']) ?>">
-                                </div>
-
-                                <div class="col-12 pt-2"><h4 class="h6 text-uppercase text-muted">Item 2 - P&oacute;s-gradua&ccedil;&atilde;o</h4></div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Titulo</label>
-                                    <input class="form-control" name="pos_graduacao_label" required value="<?= e((string)$posGraduacao['label']) ?>">
-                                </div>
-                                <div class="col-md-8">
-                                    <label class="form-label">URL</label>
-                                    <input class="form-control" name="pos_graduacao_url" required value="<?= e((string)$posGraduacao['url']) ?>">
                                 </div>
 
                                 <div class="col-12 pt-2"><h4 class="h6 text-uppercase text-muted">Topo do site</h4></div>
