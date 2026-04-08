@@ -1,0 +1,233 @@
+\documentclass[12pt,a4paper]{article}
+
+\title{Documentacao Tecnica Abrangente\\Modelo de Site de Laboratorio UFOP}
+\author{Projeto Laboratorio Vinculado a Departamento}
+\date{\today}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Resumo Executivo}
+Este documento consolida a arquitetura, as decisoes tecnicas e os modulos implementados para o portal de laboratorio vinculado a departamento da UFOP.
+
+A implementacao foi orientada por tres objetivos centrais:
+\begin{itemize}
+\item simplicidade operacional;
+\item baixo consumo de recursos de servidor;
+\item facilidade de manutencao por equipe institucional.
+\end{itemize}
+
+\section{Contexto e Restricoes da UFOP}
+\subsection{Premissas de Infraestrutura}
+O projeto foi desenhado considerando ambiente com capacidade computacional limitada, comum em servidores institucionais compartilhados.
+
+Principais riscos considerados:
+\begin{itemize}
+\item CPU e memoria concorridas com outros servicos;
+\item necessidade de alta disponibilidade com baixa complexidade de operacao;
+\item equipe de manutencao com rotatividade e tempo reduzido para suporte.
+\end{itemize}
+
+\subsection{Diretriz de Solucao}
+A diretriz adotada foi reduzir dependencias externas e componentes de runtime, priorizando:
+\begin{itemize}
+\item renderizacao server-side em PHP;
+\item banco MySQL com estrutura simples;
+\item frontend com Bootstrap e CSS local;
+\item ausencia de build pipeline pesado para producao.
+\end{itemize}
+
+Essa escolha melhora previsibilidade de desempenho e simplifica suporte tecnico.
+
+\section{Como o Laravel foi aplicado no projeto}
+\subsection{Posicionamento tecnico real}
+O repositorio esta no contexto de um workspace Laravel, e o projeto aproveita principios e organizacao inspirados no ecossistema Laravel, mas a entrega final para o portal do laboratorio foi otimizada para um \textbf{runtime PHP modular enxuto}, sem acoplar o ciclo completo de framework em producao.
+
+\subsection{Elementos inspirados no modelo Laravel}
+Os seguintes aspectos seguem filosofia tipica de projetos Laravel:
+\begin{itemize}
+\item separacao de responsabilidades entre interface, regras de negocio e persistencia;
+\item configuracao centralizada e reutilizavel em \texttt{app/includes/config.php};
+\item padronizacao de rotas por contexto funcional (admin, laboratorio, noticias, contato);
+\item tratamento de autenticao, autorizacao e auditoria em camada central;
+\item uso de seeds e inicializacao de dados para ambiente reproduzivel.
+\end{itemize}
+
+\subsection{Motivo da nao adocao full-stack Laravel no runtime final}
+Por decisao arquitetural ligada a restricao de recursos, foi priorizado um arranjo com menor overhead operacional:
+\begin{itemize}
+\item menos servicos auxiliares e menos consumo de memoria;
+\item menor custo de deploy e troubleshooting;
+\item menor risco de indisponibilidade por cadeia extensa de dependencias.
+\end{itemize}
+
+Em termos praticos, a abordagem escolhida entrega os beneficios de organizacao e governanca sem impor custo de execucao elevado.
+
+\section{Arquitetura Escolhida}
+\subsection{Visao em Camadas}
+A solucao segue arquitetura modular em tres camadas.
+
+\subsubsection{Camada de Apresentacao}
+\begin{itemize}
+\item arquivos publicos em \texttt{app/*.php} e subpastas;
+\item header e footer comuns em \texttt{app/includes/header.php} e \texttt{app/includes/footer.php};
+\item tema central em \texttt{app/assets/css/theme.css}.
+\end{itemize}
+
+\subsubsection{Camada de Aplicacao}
+\begin{itemize}
+\item regras e servicos em \texttt{app/includes/config.php};
+\item funcoes para conteudo dinamico, tema, autenticacao e permissoes;
+\item funcoes para renderizacao de menu administrativo e controle de acesso.
+\end{itemize}
+
+\subsubsection{Camada de Dados}
+\begin{itemize}
+\item MySQL como persistencia principal;
+\item settings em \texttt{site\_settings};
+\item conteudos em tabelas especializadas (noticias, editais, itens dinamicos);
+\item inicializacao em \texttt{mysql-init/02-seed-content.sql}.
+\end{itemize}
+
+\subsection{Fluxo de Requisicao}
+Fluxo padrao de uma pagina dinamica:
+\begin{enumerate}
+\item request HTTP chega ao endpoint PHP;
+\item endpoint chama funcoes de dominio no \texttt{config.php};
+\item dados sao buscados no MySQL;
+\item header e footer padronizados sao aplicados;
+\item HTML final e entregue pronto ao navegador.
+\end{enumerate}
+
+\subsection{Beneficios desta arquitetura}
+\begin{itemize}
+\item baixo custo de execucao;
+\item onboarding rapido da equipe;
+\item manutencao centralizada;
+\item evolucao incremental sem reescrita total.
+\end{itemize}
+
+\section{Modulos Implementados}
+\subsection{Site Publico}
+\begin{itemize}
+\item Home com foco em noticias: \texttt{app/index.php};
+\item menu principal do laboratorio;
+\item paginas do laboratorio: sobre, equipe, projetos, publicacoes, cursos, parceiros, tutoriais, blog, eventos;
+\item contato dinamico: \texttt{/contato/index.php};
+\item noticias e editais com listagem e detalhe.
+\end{itemize}
+
+\subsection{Painel Administrativo}
+\begin{itemize}
+\item dashboard: \texttt{/admin/dashboard.php};
+\item gestao de noticias e editais: \texttt{/admin/content.php};
+\item gestao das paginas do laboratorio: \texttt{/admin/laboratorio-paginas.php};
+\item gestao da pagina sobre: \texttt{/admin/laboratorio-sobre.php};
+\item gestao da pagina de contato: \texttt{/admin/laboratorio-contato.php};
+\item tema e paletas: \texttt{/admin/tema.php};
+\item menu e logos: \texttt{/admin/menu.php};
+\item usuarios e permissoes: \texttt{/admin/users.php}.
+\end{itemize}
+
+\subsection{Conteudo Dinamico com CRUD}
+Implementado CRUD para paginas de laboratorio com suporte a:
+\begin{itemize}
+\item criacao de itens;
+\item edicao;
+\item remocao;
+\item exibicao publica com paginacao e filtro por ano.
+\end{itemize}
+
+\subsection{Identidade Visual e Temas}
+\begin{itemize}
+\item motor de paletas em \texttt{site\_color\_palettes()};
+\item aplicacao via variaveis CSS geradas no backend;
+\item paleta \textbf{UFOP Oficial} priorizada;
+\item contraste separado entre topbar, menu principal, hero e footer.
+\end{itemize}
+
+\subsubsection{UFOP Oficial}
+Configuracao principal atual:
+\begin{itemize}
+\item cinza de apoio: \texttt{\#919191};
+\item vermelho principal: \texttt{\#962038};
+\item menu principal: \texttt{\#962038};
+\item fundo do hero/carousel: \texttt{\#919191};
+\item footer e menu do footer: \texttt{\#962038} com degrad? alinhado ao cabecalho.
+\end{itemize}
+
+\section{Seguranca, Permissoes e Auditoria}
+\subsection{Autenticacao e Controle de Acesso}
+\begin{itemize}
+\item login administrativo com hash de senha;
+\item perfis de acesso com permissoes granulares;
+\item protecao de rotas administrativas por \texttt{require\_admin\_permission()}.
+\end{itemize}
+
+\subsection{Protecoes de Formulario}
+\begin{itemize}
+\item uso de token CSRF nos formularios administrativos;
+\item validacao de entradas para operacoes de persistencia;
+\item sanitizacao de saida na renderizacao HTML.
+\end{itemize}
+
+\subsection{Auditoria}
+Acoes administrativas relevantes registradas em trilha de auditoria (criacao, edicao, exclusao, alteracao de tema, alteracao de usuarios).
+
+\section{Desempenho e Operacao}
+\subsection{Decisoes para desempenho em servidor limitado}
+\begin{itemize}
+\item renderizacao direta sem camada JS pesada;
+\item minimizacao de bibliotecas externas;
+\item consultas simples e previsiveis;
+\item paginas com paginacao para evitar cargas grandes;
+\item estrutura stateless para facilitar reinicio de container.
+\end{itemize}
+
+\subsection{Como isso melhora o funcionamento}
+\begin{itemize}
+\item menor tempo de resposta medio;
+\item menor consumo de RAM;
+\item menor risco de gargalos por dependencia externa;
+\item manutencao mais simples em equipe reduzida.
+\end{itemize}
+
+\section{Infraestrutura e Deploy}
+\subsection{Ambiente local e homologacao}
+\begin{verbatim}
+docker compose up -d --build app
+\end{verbatim}
+
+\subsection{Endpoints padrao}
+\begin{itemize}
+\item site: \texttt{http://localhost:8092/}
+\item admin: \texttt{http://localhost:8092/admin/login.php}
+\end{itemize}
+
+\subsection{Componentes de infraestrutura}
+\begin{itemize}
+\item container da aplicacao PHP/Apache;
+\item container MySQL;
+\item volume/persistencia para dados e assets publicados.
+\end{itemize}
+
+\section{Mapa de Arquivos e Responsabilidades}
+\begin{itemize}
+\item \texttt{app/includes/config.php}: nucleo de negocio e acesso a dados;
+\item \texttt{app/includes/header.php}: topo, logos e menu principal;
+\item \texttt{app/includes/footer.php}: menu footer, calendario, botao topo;
+\item \texttt{app/assets/css/theme.css}: comportamento visual global;
+\item \texttt{app/admin/*.php}: administracao de conteudo e configuracoes;
+\item \texttt{app/laboratorio/*.php}: paginas publicas do laboratorio;
+\item \texttt{app/noticias/*.php}: noticias, editais e visualizacao;
+\item \texttt{mysql-init/02-seed-content.sql}: seed inicial de conteudo.
+\end{itemize}
+
+\section{Conclusao Arquitetural}
+A arquitetura adotada equilibra governanca, desempenho e simplicidade operacional. O projeto aplica principios de organizacao tipicos do ecossistema Laravel, mas com runtime PHP modular enxuto, adequado ao contexto de infraestrutura com recursos limitados da UFOP.
+
+Esse desenho reduz custo de operacao, aumenta previsibilidade e permite evolucao incremental do portal sem comprometer estabilidade.
+
+\end{document}
