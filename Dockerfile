@@ -11,6 +11,9 @@ RUN { \
       echo 'error_reporting=E_ALL & ~E_DEPRECATED & ~E_STRICT'; \
       echo 'log_errors=On'; \
       echo 'default_charset=UTF-8'; \
+      echo 'upload_max_filesize=12M'; \
+      echo 'post_max_size=12M'; \
+      echo 'max_file_uploads=20'; \
     } > /usr/local/etc/php/conf.d/zz-local.ini
 
 COPY apache-000-default.conf /etc/apache2/sites-available/000-default.conf

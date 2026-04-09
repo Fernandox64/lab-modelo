@@ -5,6 +5,40 @@ require_once __DIR__ . '/../includes/config.php';
 
 require_admin_permission('manage_carousel');
 
+function carousel_ini_size_to_bytes(string $value): int {
+    $v = trim($value);
+    if ($v === '') {
+        return 0;
+    }
+    $unit = strtolower(substr($v, -1));
+    $num = (float)$v;
+    if ($unit === 'g') {
+        return (int)($num * 1024 * 1024 * 1024);
+    }
+    if ($unit === 'm') {
+        return (int)($num * 1024 * 1024);
+    }
+    if ($unit === 'k') {
+        return (int)($num * 1024);
+    }
+    return (int)$num;
+}
+
+function carousel_request_exceeded_post_limit(): bool {
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        return false;
+    }
+    $contentLength = (int)($_SERVER['CONTENT_LENGTH'] ?? 0);
+    if ($contentLength <= 0) {
+        return false;
+    }
+    $postMax = carousel_ini_size_to_bytes((string)ini_get('post_max_size'));
+    if ($postMax <= 0) {
+        return false;
+    }
+    return $contentLength > $postMax && empty($_POST) && empty($_FILES);
+}
+
 function carousel_store_uploaded_image(array $file): string {
     $errorCode = (int)($file['error'] ?? UPLOAD_ERR_NO_FILE);
     if ($errorCode !== UPLOAD_ERR_OK) {
@@ -61,7 +95,9 @@ $error = null;
 $notice = trim((string)($_GET['ok'] ?? ''));
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!is_valid_csrf_token($_POST['csrf_token'] ?? null)) {
+    if (carousel_request_exceeded_post_limit()) {
+        $error = 'Upload excedeu o limite permitido pelo servidor. Use imagem menor que 8MB.';
+    } elseif (!is_valid_csrf_token($_POST['csrf_token'] ?? null)) {
         $error = 'Token CSRF invalido.';
     } else {
         try {
@@ -252,6 +288,7 @@ if ($notice === 'added') {
                             <div class="col-md-4">
                                 <label class="form-label">Upload de imagem</label>
                                 <input class="form-control js-slide-upload" type="file" accept=".jpg,.jpeg,.png,.gif,.webp,image/*" name="upload" data-preview-id="slide-main-preview">
+                                <div class="form-text text-danger">Aviso: a imagem deve ter menos de 8 MB, caso contrario o envio sera recusado pelo servidor.</div>
                             </div>
                             <div class="col-md-8">
                                 <label class="form-label">Ou caminho da imagem (opcional)</label>
