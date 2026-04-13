@@ -79,6 +79,8 @@ $departmentLogo = header_department_logo();
                 <li class="nav-item"><a class="nav-link" href="/laboratorio/tutoriais.php">Tutoriais</a></li>
                 <li class="nav-item"><a class="nav-link" href="/laboratorio/blog.php">Blog</a></li>
                 <li class="nav-item"><a class="nav-link" href="/laboratorio/eventos.php">Eventos</a></li>
+                <li class="nav-item"><a class="nav-link" href="/noticias/index.php">Noticias</a></li>
+                <li class="nav-item"><a class="nav-link" href="/noticias/editais.php">Editais</a></li>
                 <li class="nav-item"><a class="nav-link" href="/contato/index.php">Contato</a></li>
             </ul>
 

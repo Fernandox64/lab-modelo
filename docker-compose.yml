@@ -16,9 +16,9 @@ services:
       ADMIN_EMAIL: admin@example.com
       ADMIN_PASSWORD_HASH: '$$2y$$10$$W/qql.sYI8hgRWMe9GbcneF8405tC66RulL7qlZ4PpwpbRKdvOJgS'
     volumes:
-      - /var/www/shared/uploads:/var/www/html/uploads
-      - /var/www/shared/carousel-uploads:/var/www/html/assets/images/carousel/uploads
-      - /var/www/shared/lab-about-carousel:/var/www/html/assets/images/laboratorio/sobre-carousel
+      - ./storage/uploads:/var/www/html/uploads
+      - ./storage/carousel-uploads:/var/www/html/assets/images/carousel/uploads
+      - ./storage/lab-about-carousel:/var/www/html/assets/images/laboratorio/sobre-carousel
     restart: unless-stopped
 
   db:
