@@ -15,6 +15,10 @@ services:
       DB_PASSWORD: newspass
       ADMIN_EMAIL: admin@example.com
       ADMIN_PASSWORD_HASH: '$$2y$$10$$W/qql.sYI8hgRWMe9GbcneF8405tC66RulL7qlZ4PpwpbRKdvOJgS'
+    volumes:
+      - ./app/uploads:/var/www/html/uploads
+      - ./app/assets/images/carousel/uploads:/var/www/html/assets/images/carousel/uploads
+      - ./app/assets/images/laboratorio/sobre-carousel:/var/www/html/assets/images/laboratorio/sobre-carousel
     restart: unless-stopped
 
   db:

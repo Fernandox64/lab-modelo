@@ -2619,7 +2619,7 @@ function require_admin_permission(string $permission): void {
 function render_admin_sidebar(string $active = 'dashboard'): void {
     $is = static fn(string $key): bool => $active === $key;
     $in = static fn(array $keys): bool => in_array($active, $keys, true);
-    $grpContent = ['content_noticias', 'content_editais'];
+    $grpContent = ['content_noticias', 'content_editais', 'content_carousel'];
     $grpHome = ['carousel', 'tema', 'menu', 'footer', 'lab_about', 'lab_about_carousel', 'lab_pages', 'lab_contact'];
     $grpEquipe = ['pessoal'];
     $openOnDashboard = $is('dashboard');
@@ -2650,6 +2650,7 @@ function render_admin_sidebar(string $active = 'dashboard'): void {
                         <ul class="nav nav-treeview">
                             <li class="nav-item"><a href="/admin/content.php?type=noticias" class="nav-link<?= $is('content_noticias') ? ' active' : '' ?>"><p>Noticias</p></a></li>
                             <li class="nav-item"><a href="/admin/content.php?type=editais" class="nav-link<?= $is('content_editais') ? ' active' : '' ?>"><p>Editais</p></a></li>
+                            <li class="nav-item"><a href="/admin/content-carousel.php" class="nav-link<?= $is('content_carousel') ? ' active' : '' ?>"><p>Carrossel Noticias/Editais</p></a></li>
                         </ul>
                     </li>
 
@@ -2802,6 +2803,127 @@ function fetch_content_items(string $table): array {
     return db()->query($sql)->fetchAll();
 }
 
+function ensure_content_carousel_images_table(): void {
+    static $ready = false;
+    if ($ready) {
+        return;
+    }
+    $ready = true;
+    try {
+        db()->exec(
+            "CREATE TABLE IF NOT EXISTS content_carousel_images (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                content_type ENUM('noticias','editais') NOT NULL,
+                content_id INT NOT NULL,
+                image_url VARCHAR(255) NOT NULL,
+                caption VARCHAR(255) DEFAULT NULL,
+                sort_order INT NOT NULL DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_content_carousel (content_type, content_id, sort_order, id)
+            ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+        );
+    } catch (Throwable $e) {
+        error_log('Failed ensuring content_carousel_images table: ' . $e->getMessage());
+    }
+}
+function content_table_by_type(string $type): string {
+    return $type === 'editais' ? 'edital_items' : 'news_items';
+}
+function content_find_news_or_edital_by_slug(string $slug): ?array {
+    $slug = trim($slug);
+    if ($slug === '') {
+        return null;
+    }
+    try {
+        $stmt = db()->prepare("SELECT id, slug, title, summary, category, content, image FROM news_items WHERE slug = :slug LIMIT 1");
+        $stmt->execute([':slug' => $slug]);
+        $row = $stmt->fetch();
+        if (is_array($row)) {
+            return ['item' => $row, 'content_type' => 'noticias', 'content_id' => (int)$row['id']];
+        }
+        $stmt = db()->prepare("SELECT id, slug, title, summary, category, content, image FROM edital_items WHERE slug = :slug LIMIT 1");
+        $stmt->execute([':slug' => $slug]);
+        $row = $stmt->fetch();
+        if (is_array($row)) {
+            return ['item' => $row, 'content_type' => 'editais', 'content_id' => (int)$row['id']];
+        }
+    } catch (Throwable $e) {
+        error_log('Failed finding content by slug: ' . $e->getMessage());
+    }
+    return null;
+}
+function content_carousel_images_get(string $type, int $contentId): array {
+    ensure_content_carousel_images_table();
+    if (!in_array($type, ['noticias', 'editais'], true) || $contentId <= 0) {
+        return [];
+    }
+    try {
+        $stmt = db()->prepare(
+            "SELECT image_url, caption
+             FROM content_carousel_images
+             WHERE content_type = :content_type AND content_id = :content_id
+             ORDER BY sort_order ASC, id ASC"
+        );
+        $stmt->execute([':content_type' => $type, ':content_id' => $contentId]);
+        return array_values(array_filter(array_map(static function (array $row): array {
+            return [
+                'image_url' => trim((string)($row['image_url'] ?? '')),
+                'caption' => trim((string)($row['caption'] ?? '')),
+            ];
+        }, $stmt->fetchAll()), static fn(array $row): bool => $row['image_url'] !== ''));
+    } catch (Throwable $e) {
+        error_log('Failed loading content carousel images: ' . $e->getMessage());
+        return [];
+    }
+}
+function content_carousel_images_replace(string $type, int $contentId, array $slides): void {
+    ensure_content_carousel_images_table();
+    if (!in_array($type, ['noticias', 'editais'], true) || $contentId <= 0) {
+        return;
+    }
+    $normalized = [];
+    foreach ($slides as $idx => $slide) {
+        if (!is_array($slide)) {
+            continue;
+        }
+        $imageUrl = trim((string)($slide['image_url'] ?? ''));
+        $caption = trim((string)($slide['caption'] ?? ''));
+        if ($imageUrl === '') {
+            continue;
+        }
+        $normalized[] = [
+            'image_url' => normalize_menu_url($imageUrl, '/'),
+            'caption' => $caption,
+            'sort_order' => (int)($slide['sort_order'] ?? ($idx + 1)),
+        ];
+    }
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $del = $pdo->prepare('DELETE FROM content_carousel_images WHERE content_type = :content_type AND content_id = :content_id');
+        $del->execute([':content_type' => $type, ':content_id' => $contentId]);
+        if (!empty($normalized)) {
+            $ins = $pdo->prepare(
+                'INSERT INTO content_carousel_images (content_type, content_id, image_url, caption, sort_order)
+                 VALUES (:content_type, :content_id, :image_url, :caption, :sort_order)'
+            );
+            foreach ($normalized as $slide) {
+                $ins->execute([
+                    ':content_type' => $type,
+                    ':content_id' => $contentId,
+                    ':image_url' => $slide['image_url'],
+                    ':caption' => $slide['caption'],
+                    ':sort_order' => $slide['sort_order'],
+                ]);
+            }
+        }
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+}
 function demo_news(): array {
     try {
         $items = fetch_content_items('news_items');

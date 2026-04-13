@@ -266,6 +266,7 @@ $items = $itemsStmt->fetchAll();
                                         <td><code><?= e((string)$row['slug']) ?></code></td>
                                         <td class="text-end">
                                             <a class="btn btn-outline-primary btn-sm" href="/admin/content.php?type=<?= e($type) ?>&edit=<?= e((string)$row['id']) ?>">Editar</a>
+                                            <a class="btn btn-outline-secondary btn-sm" href="/admin/content-carousel.php?type=<?= e($type) ?>&item_id=<?= e((string)$row['id']) ?>">Carrossel</a>
                                             <form method="post" class="d-inline">
                                                 <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                                                 <input type="hidden" name="action" value="delete">
