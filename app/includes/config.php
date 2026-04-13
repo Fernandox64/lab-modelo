@@ -2621,11 +2621,20 @@ function render_admin_sidebar(string $active = 'dashboard'): void {
     $in = static fn(array $keys): bool => in_array($active, $keys, true);
     $grpContent = ['content_noticias', 'content_editais', 'content_carousel'];
     $grpHome = ['carousel', 'tema', 'menu', 'footer', 'lab_about', 'lab_about_carousel', 'lab_pages', 'lab_contact'];
-    $grpEquipe = ['pessoal'];
     $openOnDashboard = $is('dashboard');
     ?>
     <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
         <style>
+            .app-sidebar {
+                height: 100vh;
+                overflow: hidden;
+            }
+            .app-sidebar .sidebar-wrapper {
+                height: calc(100vh - 3.5rem);
+                overflow-y: auto;
+                overflow-x: hidden;
+                padding-bottom: .75rem;
+            }
             .app-sidebar .menu-caret {
                 display: inline-block;
                 margin-left: .35rem;
@@ -2643,8 +2652,6 @@ function render_admin_sidebar(string $active = 'dashboard'): void {
         <div class="sidebar-wrapper">
             <nav class="mt-2">
                 <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu">
-                    <li class="nav-item"><a href="/admin/dashboard.php" class="nav-link<?= $is('dashboard') ? ' active' : '' ?>"><p>Dashboard</p></a></li>
-
                     <li class="nav-item<?= ($openOnDashboard || $in($grpContent)) ? ' menu-open' : '' ?>">
                         <a href="#" class="nav-link<?= ($openOnDashboard || $in($grpContent)) ? ' active' : '' ?>"><p>Conteudo <span class="menu-caret" aria-hidden="true">&rsaquo;</span></p></a>
                         <ul class="nav nav-treeview">
@@ -2675,12 +2682,7 @@ function render_admin_sidebar(string $active = 'dashboard'): void {
                         </ul>
                     </li>
 
-                    <li class="nav-item<?= ($openOnDashboard || $in($grpEquipe)) ? ' menu-open' : '' ?>">
-                        <a href="#" class="nav-link<?= ($openOnDashboard || $in($grpEquipe)) ? ' active' : '' ?>"><p>Equipe <span class="menu-caret" aria-hidden="true">&rsaquo;</span></p></a>
-                        <ul class="nav nav-treeview">
-                            <li class="nav-item"><a href="/admin/pessoal.php" class="nav-link<?= $is('pessoal') ? ' active' : '' ?>"><p>Pessoal</p></a></li>
-                        </ul>
-                    </li>
+                    <li class="nav-item"><a href="/admin/pessoal.php" class="nav-link<?= $is('pessoal') ? ' active' : '' ?>"><p>Equipe</p></a></li>
 
                     <?php if (admin_can('manage_users')): ?>
                         <li class="nav-item"><a href="/admin/users.php" class="nav-link<?= $is('users') ? ' active' : '' ?>"><p>Usuarios e Permissoes</p></a></li>
