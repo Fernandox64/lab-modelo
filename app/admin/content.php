@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../includes/config.php';
 
 require_admin_permission('manage_content');
+ensure_content_carousel_images_table();
 
 function admin_content_meta(string $type): array {
     if ($type === 'editais') {
@@ -64,6 +65,7 @@ $pdo = db();
 $error = null;
 $success = null;
 $editing = null;
+$formSlides = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!is_valid_csrf_token($_POST['csrf_token'] ?? null)) {
@@ -87,6 +89,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $image = trim((string)($_POST['image'] ?? ''));
             $publishedAtInput = trim((string)($_POST['published_at'] ?? ''));
             $slugInput = trim((string)($_POST['slug'] ?? ''));
+            $slideImageUrls = (array)($_POST['carousel_image_url'] ?? []);
+            $slideCaptions = (array)($_POST['carousel_caption'] ?? []);
+            $slideOrders = (array)($_POST['carousel_sort_order'] ?? []);
+            $carouselSlides = [];
+            foreach ($slideImageUrls as $idx => $slideUrl) {
+                $carouselSlides[] = [
+                    'image_url' => (string)$slideUrl,
+                    'caption' => (string)($slideCaptions[$idx] ?? ''),
+                    'sort_order' => (int)($slideOrders[$idx] ?? ($idx + 1)),
+                ];
+            }
+            $formSlides = $carouselSlides;
 
             if ($title === '' || $summary === '' || $content === '') {
                 $error = 'Titulo, resumo e conteudo sao obrigatorios.';
@@ -112,6 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ':published_at' => $publishedAt,
                         ':id' => $id,
                     ]);
+                    content_carousel_images_replace($type, $id, $carouselSlides);
                     admin_audit_log('content_update', ['type' => $type, 'id' => $id, 'slug' => $slug, 'title' => $title], $meta['table']);
                     $success = 'Registro atualizado com sucesso.';
                 } else {
@@ -129,6 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ':published_at' => $publishedAt,
                     ]);
                     $newId = (int)$pdo->lastInsertId();
+                    content_carousel_images_replace($type, $newId, $carouselSlides);
                     admin_audit_log('content_create', ['type' => $type, 'id' => $newId, 'slug' => $slug, 'title' => $title], $meta['table']);
                     $success = 'Registro criado com sucesso.';
                 }
@@ -142,6 +158,13 @@ if ($editId > 0) {
     $stmt = $pdo->prepare("SELECT * FROM {$meta['table']} WHERE id = :id");
     $stmt->execute([':id' => $editId]);
     $editing = $stmt->fetch();
+}
+
+if ($editing && empty($formSlides)) {
+    $formSlides = content_carousel_images_get($type, (int)$editing['id']);
+}
+if (empty($formSlides)) {
+    $formSlides = [['image_url' => '', 'caption' => '', 'sort_order' => 1]];
 }
 
 $itemsStmt = $pdo->query("SELECT id, slug, title, summary, category, image, published_at FROM {$meta['table']} ORDER BY published_at DESC, id DESC LIMIT 200");
@@ -231,6 +254,38 @@ $items = $itemsStmt->fetchAll();
                                 <div class="col-12">
                                     <label class="form-label">Imagem (URL ou /assets/...)</label>
                                     <input class="form-control" name="image" placeholder="/assets/cards/noticia-default.svg" value="<?= e((string)($editing['image'] ?? '')) ?>">
+                                </div>
+                                <div class="col-12">
+                                    <hr class="my-2">
+                                    <h4 class="h6 mb-2">Carrossel especifico deste post</h4>
+                                    <p class="text-muted mb-2">As imagens abaixo aparecem somente nesta noticia/edital.</p>
+                                    <div id="contentCarouselSlidesWrap">
+                                        <?php foreach ($formSlides as $idx => $slide): ?>
+                                            <div class="row g-2 align-items-end mb-2 content-carousel-row">
+                                                <div class="col-md-7">
+                                                    <label class="form-label">Imagem (URL)</label>
+                                                    <input class="form-control" name="carousel_image_url[]" value="<?= e((string)($slide['image_url'] ?? '')) ?>" placeholder="/uploads/... ou /assets/...">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Legenda (opcional)</label>
+                                                    <input class="form-control" name="carousel_caption[]" value="<?= e((string)($slide['caption'] ?? '')) ?>">
+                                                </div>
+                                                <div class="col-md-1">
+                                                    <label class="form-label">Ordem</label>
+                                                    <input type="number" class="form-control" name="carousel_sort_order[]" value="<?= e((string)($slide['sort_order'] ?? ($idx + 1))) ?>">
+                                                </div>
+                                                <div class="col-md-1">
+                                                    <button type="button" class="btn btn-outline-danger w-100 remove-content-carousel-row">X</button>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <div class="d-flex gap-2 mt-2">
+                                        <button type="button" id="addContentCarouselRow" class="btn btn-outline-secondary btn-sm">Adicionar imagem ao carrossel</button>
+                                        <?php if ($editing): ?>
+                                            <a class="btn btn-outline-primary btn-sm" href="/admin/content-carousel.php?type=<?= e($type) ?>&item_id=<?= e((string)$editing['id']) ?>">Upload de imagens (opcional)</a>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                             </div>
 
@@ -322,6 +377,41 @@ tinymce.init({
   content_style: 'body { font-family: Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.6; }',
   valid_elements: 'p,br,strong/b,em/i,u,ul,ol,li,a[href|target|rel],h2,h3,h4,blockquote,img[src|alt|title|width|height],table,thead,tbody,tr,td,th,hr'
 });
+
+(() => {
+  const wrap = document.getElementById('contentCarouselSlidesWrap');
+  const add = document.getElementById('addContentCarouselRow');
+  if (!wrap || !add) return;
+  add.addEventListener('click', () => {
+    const total = wrap.querySelectorAll('.content-carousel-row').length + 1;
+    const row = document.createElement('div');
+    row.className = 'row g-2 align-items-end mb-2 content-carousel-row';
+    row.innerHTML = `
+      <div class="col-md-7">
+        <label class="form-label">Imagem (URL)</label>
+        <input class="form-control" name="carousel_image_url[]" placeholder="/uploads/... ou /assets/...">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Legenda (opcional)</label>
+        <input class="form-control" name="carousel_caption[]">
+      </div>
+      <div class="col-md-1">
+        <label class="form-label">Ordem</label>
+        <input type="number" class="form-control" name="carousel_sort_order[]" value="${total}">
+      </div>
+      <div class="col-md-1">
+        <button type="button" class="btn btn-outline-danger w-100 remove-content-carousel-row">X</button>
+      </div>`;
+    wrap.appendChild(row);
+  });
+  wrap.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('.remove-content-carousel-row');
+    if (!btn) return;
+    const rows = wrap.querySelectorAll('.content-carousel-row');
+    if (rows.length <= 1) return;
+    btn.closest('.content-carousel-row')?.remove();
+  });
+})();
 </script>
 </body>
 </html>
