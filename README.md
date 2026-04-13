@@ -12,8 +12,8 @@ Template de portal institucional para departamento/laboratorio.
 ## Credenciais de exemplo (Admin)
 
 - superadmin
-  - E-mail: `superadmin@departamento.local`
-  - Senha: `Super@2026!`
+  - E-mail: superadmin@departamento.local
+  - Senha: Super@2026!
 - editor
   - E-mail: `editor@departamento.local`
   - Senha: `Editor@2026!`

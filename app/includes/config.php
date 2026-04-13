@@ -1275,6 +1275,72 @@ function laboratory_about_save(array $data): void {
     site_setting_set($prefix . 'summary', $summary !== '' ? $summary : $defaults['summary']);
     site_setting_set($prefix . 'content_html', $contentHtml !== '' ? $contentHtml : $defaults['content_html']);
 }
+function laboratory_about_carousel_defaults(): array {
+    return [
+        [
+            'id' => 'about-default-1',
+            'image' => '/assets/images/carousel/lab-2.png',
+            'title' => 'Infraestrutura de pesquisa',
+            'caption' => 'Espacos e equipamentos para atividades de ensino, pesquisa e extensao.',
+        ],
+    ];
+}
+function laboratory_about_carousel_slide_normalize(array $slide, string $fallbackId): array {
+    $id = trim((string)($slide['id'] ?? ''));
+    if ($id === '') {
+        $id = $fallbackId;
+    }
+    $image = trim((string)($slide['image'] ?? ''));
+    if ($image === '') {
+        $image = '/assets/images/carousel/lab-2.png';
+    }
+    return [
+        'id' => $id,
+        'image' => $image,
+        'title' => trim((string)($slide['title'] ?? '')),
+        'caption' => trim((string)($slide['caption'] ?? '')),
+    ];
+}
+function laboratory_about_carousel_get(): array {
+    $json = trim(site_setting_get('laboratory_about_carousel_json', ''));
+    if ($json !== '') {
+        $decoded = json_decode($json, true);
+        if (is_array($decoded) && !empty($decoded)) {
+            $out = [];
+            $idx = 1;
+            foreach ($decoded as $slide) {
+                if (!is_array($slide)) {
+                    continue;
+                }
+                $out[] = laboratory_about_carousel_slide_normalize($slide, 'about-slide-' . $idx);
+                $idx++;
+            }
+            if (!empty($out)) {
+                return $out;
+            }
+        }
+    }
+    return laboratory_about_carousel_defaults();
+}
+function laboratory_about_carousel_save(array $slides): void {
+    $normalized = [];
+    $idx = 1;
+    foreach ($slides as $slide) {
+        if (!is_array($slide)) {
+            continue;
+        }
+        $n = laboratory_about_carousel_slide_normalize($slide, 'about-slide-' . $idx);
+        if ($n['image'] === '' && $n['title'] === '' && $n['caption'] === '') {
+            continue;
+        }
+        $normalized[] = $n;
+        $idx++;
+    }
+    if (empty($normalized)) {
+        $normalized = laboratory_about_carousel_defaults();
+    }
+    site_setting_set('laboratory_about_carousel_json', json_encode($normalized, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+}
 function laboratory_contact_defaults(): array {
     return [
         'title' => 'Contato',
@@ -1312,6 +1378,100 @@ function laboratory_contact_save(array $data): void {
     site_setting_set($prefix . 'phone', $phone !== '' ? $phone : $defaults['phone']);
     site_setting_set($prefix . 'address', $address !== '' ? $address : $defaults['address']);
     site_setting_set($prefix . 'content_html', $contentHtml !== '' ? $contentHtml : $defaults['content_html']);
+}
+function footer_defaults(): array {
+    return [
+        'brand_name' => SITE_NAME,
+        'brand_sigla' => SITE_SIGLA,
+        'brand_university' => SITE_UNIVERSITY,
+        'contact_phone' => SITE_PHONE,
+        'contact_email' => SITE_EMAIL,
+        'show_calendar' => true,
+        'links' => [
+            ['label' => 'Home', 'url' => '/'],
+            ['label' => 'O Laboratorio', 'url' => '/laboratorio/sobre.php'],
+            ['label' => 'Equipe', 'url' => '/laboratorio/equipe.php'],
+            ['label' => 'Projetos', 'url' => '/laboratorio/projetos.php'],
+            ['label' => 'Publicacoes', 'url' => '/laboratorio/publicacoes.php'],
+            ['label' => 'Cursos', 'url' => '/laboratorio/cursos.php'],
+            ['label' => 'Parceiros', 'url' => '/laboratorio/parceiros.php'],
+            ['label' => 'Tutoriais', 'url' => '/laboratorio/tutoriais.php'],
+            ['label' => 'Blog', 'url' => '/laboratorio/blog.php'],
+            ['label' => 'Eventos', 'url' => '/laboratorio/eventos.php'],
+            ['label' => 'Contato', 'url' => '/contato/index.php'],
+            ['label' => 'Noticias', 'url' => '/noticias/index.php'],
+            ['label' => 'Editais', 'url' => '/noticias/editais.php'],
+        ],
+    ];
+}
+function footer_links_normalize(array $links): array {
+    $out = [];
+    foreach ($links as $link) {
+        if (!is_array($link)) {
+            continue;
+        }
+        $label = trim((string)($link['label'] ?? ''));
+        $url = trim((string)($link['url'] ?? ''));
+        if ($label === '' || $url === '') {
+            continue;
+        }
+        $out[] = [
+            'label' => $label,
+            'url' => normalize_menu_url($url, '/'),
+        ];
+    }
+    return $out;
+}
+function footer_get(): array {
+    $d = footer_defaults();
+    $rawLinks = trim(site_setting_get('footer_links_json', ''));
+    $links = $d['links'];
+    if ($rawLinks !== '') {
+        $decoded = json_decode($rawLinks, true);
+        if (is_array($decoded)) {
+            $normalized = footer_links_normalize($decoded);
+            if (!empty($normalized)) {
+                $links = $normalized;
+            }
+        }
+    }
+    $rawShowCalendar = site_setting_get('footer_show_calendar', '__unset__');
+    if ($rawShowCalendar === '__unset__') {
+        $showCalendar = site_setting_get('show_student_calendar', '1') !== '0';
+    } else {
+        $showCalendar = $rawShowCalendar !== '0';
+    }
+    return [
+        'brand_name' => trim(site_setting_get('footer_brand_name', $d['brand_name'])),
+        'brand_sigla' => trim(site_setting_get('footer_brand_sigla', $d['brand_sigla'])),
+        'brand_university' => trim(site_setting_get('footer_brand_university', $d['brand_university'])),
+        'contact_phone' => trim(site_setting_get('footer_contact_phone', $d['contact_phone'])),
+        'contact_email' => trim(site_setting_get('footer_contact_email', $d['contact_email'])),
+        'show_calendar' => $showCalendar,
+        'links' => $links,
+    ];
+}
+function footer_save(array $data): void {
+    $d = footer_defaults();
+    $brandName = trim((string)($data['brand_name'] ?? $d['brand_name']));
+    $brandSigla = trim((string)($data['brand_sigla'] ?? $d['brand_sigla']));
+    $brandUniversity = trim((string)($data['brand_university'] ?? $d['brand_university']));
+    $contactPhone = trim((string)($data['contact_phone'] ?? $d['contact_phone']));
+    $contactEmail = trim((string)($data['contact_email'] ?? $d['contact_email']));
+    $showCalendar = isset($data['show_calendar']) ? '1' : '0';
+    $links = footer_links_normalize((array)($data['links'] ?? $d['links']));
+    if (empty($links)) {
+        $links = $d['links'];
+    }
+
+    site_setting_set('footer_brand_name', $brandName !== '' ? $brandName : $d['brand_name']);
+    site_setting_set('footer_brand_sigla', $brandSigla !== '' ? $brandSigla : $d['brand_sigla']);
+    site_setting_set('footer_brand_university', $brandUniversity !== '' ? $brandUniversity : $d['brand_university']);
+    site_setting_set('footer_contact_phone', $contactPhone !== '' ? $contactPhone : $d['contact_phone']);
+    site_setting_set('footer_contact_email', $contactEmail !== '' ? $contactEmail : $d['contact_email']);
+    site_setting_set('footer_show_calendar', $showCalendar);
+    site_setting_set('show_student_calendar', $showCalendar);
+    site_setting_set('footer_links_json', json_encode($links, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 }
 function laboratory_page_catalog(): array {
     return [
@@ -2460,7 +2620,7 @@ function render_admin_sidebar(string $active = 'dashboard'): void {
     $is = static fn(string $key): bool => $active === $key;
     $in = static fn(array $keys): bool => in_array($active, $keys, true);
     $grpContent = ['content_noticias', 'content_editais'];
-    $grpHome = ['carousel', 'tema', 'menu', 'lab_about', 'lab_pages', 'lab_contact'];
+    $grpHome = ['carousel', 'tema', 'menu', 'footer', 'lab_about', 'lab_about_carousel', 'lab_pages', 'lab_contact'];
     $grpEquipe = ['pessoal'];
     $openOnDashboard = $is('dashboard');
     ?>
@@ -2486,7 +2646,7 @@ function render_admin_sidebar(string $active = 'dashboard'): void {
                     <li class="nav-item"><a href="/admin/dashboard.php" class="nav-link<?= $is('dashboard') ? ' active' : '' ?>"><p>Dashboard</p></a></li>
 
                     <li class="nav-item<?= ($openOnDashboard || $in($grpContent)) ? ' menu-open' : '' ?>">
-                        <a href="#" class="nav-link<?= ($openOnDashboard || $in($grpContent)) ? ' active' : '' ?>"><p>Conteudo <span class="menu-caret" aria-hidden="true">â–¸</span></p></a>
+                        <a href="#" class="nav-link<?= ($openOnDashboard || $in($grpContent)) ? ' active' : '' ?>"><p>Conteudo <span class="menu-caret" aria-hidden="true">&rsaquo;</span></p></a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item"><a href="/admin/content.php?type=noticias" class="nav-link<?= $is('content_noticias') ? ' active' : '' ?>"><p>Noticias</p></a></li>
                             <li class="nav-item"><a href="/admin/content.php?type=editais" class="nav-link<?= $is('content_editais') ? ' active' : '' ?>"><p>Editais</p></a></li>
@@ -2494,19 +2654,28 @@ function render_admin_sidebar(string $active = 'dashboard'): void {
                     </li>
 
                     <li class="nav-item<?= ($openOnDashboard || $in($grpHome)) ? ' menu-open' : '' ?>">
-                        <a href="#" class="nav-link<?= ($openOnDashboard || $in($grpHome)) ? ' active' : '' ?>"><p>Home e Visual <span class="menu-caret" aria-hidden="true">â–¸</span></p></a>
+                        <a href="#" class="nav-link<?= ($openOnDashboard || $in($grpHome)) ? ' active' : '' ?>"><p>Home e Visual <span class="menu-caret" aria-hidden="true">&rsaquo;</span></p></a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item"><a href="/admin/carousel.php" class="nav-link<?= $is('carousel') ? ' active' : '' ?>"><p>Carrossel Home</p></a></li>
                             <li class="nav-item"><a href="/admin/laboratorio-sobre.php" class="nav-link<?= $is('lab_about') ? ' active' : '' ?>"><p>Pagina O Laboratorio</p></a></li>
+                            <li class="nav-item"><a href="/admin/laboratorio-sobre-carousel.php" class="nav-link<?= $is('lab_about_carousel') ? ' active' : '' ?>"><p>Carrossel O Laboratorio</p></a></li>
                             <li class="nav-item"><a href="/admin/laboratorio-contato.php" class="nav-link<?= $is('lab_contact') ? ' active' : '' ?>"><p>Pagina Contato</p></a></li>
                             <li class="nav-item"><a href="/admin/laboratorio-paginas.php" class="nav-link<?= $is('lab_pages') ? ' active' : '' ?>"><p>Paginas do Laboratorio</p></a></li>
+                            <li class="nav-item"><a href="/admin/laboratorio-paginas.php?slug=projetos" class="nav-link"><p>Editar Projetos</p></a></li>
+                            <li class="nav-item"><a href="/admin/laboratorio-paginas.php?slug=publicacoes" class="nav-link"><p>Editar Publicacoes</p></a></li>
+                            <li class="nav-item"><a href="/admin/laboratorio-paginas.php?slug=cursos" class="nav-link"><p>Editar Cursos</p></a></li>
+                            <li class="nav-item"><a href="/admin/laboratorio-paginas.php?slug=parceiros" class="nav-link"><p>Editar Parceiros</p></a></li>
+                            <li class="nav-item"><a href="/admin/laboratorio-paginas.php?slug=tutoriais" class="nav-link"><p>Editar Tutoriais</p></a></li>
+                            <li class="nav-item"><a href="/admin/laboratorio-paginas.php?slug=blog" class="nav-link"><p>Editar Blog</p></a></li>
+                            <li class="nav-item"><a href="/admin/laboratorio-paginas.php?slug=eventos" class="nav-link"><p>Editar Eventos</p></a></li>
+                            <li class="nav-item"><a href="/admin/footer.php" class="nav-link<?= $is('footer') ? ' active' : '' ?>"><p>Rodape do Site</p></a></li>
                             <li class="nav-item"><a href="/admin/tema.php" class="nav-link<?= $is('tema') ? ' active' : '' ?>"><p>Tema e Cores</p></a></li>
                             <li class="nav-item"><a href="/admin/menu.php" class="nav-link<?= $is('menu') ? ' active' : '' ?>"><p>Menu Principal</p></a></li>
                         </ul>
                     </li>
 
                     <li class="nav-item<?= ($openOnDashboard || $in($grpEquipe)) ? ' menu-open' : '' ?>">
-                        <a href="#" class="nav-link<?= ($openOnDashboard || $in($grpEquipe)) ? ' active' : '' ?>"><p>Equipe <span class="menu-caret" aria-hidden="true">â–¸</span></p></a>
+                        <a href="#" class="nav-link<?= ($openOnDashboard || $in($grpEquipe)) ? ' active' : '' ?>"><p>Equipe <span class="menu-caret" aria-hidden="true">&rsaquo;</span></p></a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item"><a href="/admin/pessoal.php" class="nav-link<?= $is('pessoal') ? ' active' : '' ?>"><p>Pessoal</p></a></li>
                         </ul>

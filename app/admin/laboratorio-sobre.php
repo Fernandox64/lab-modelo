@@ -73,6 +73,10 @@ $content = laboratory_about_get();
                 <div class="card">
                     <div class="card-header"><h3 class="card-title">Conteudo da pagina</h3></div>
                     <div class="card-body">
+                        <div class="alert alert-info d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div>Carrossel da pagina "O Laboratorio" agora e gerenciado em uma subpagina dedicada.</div>
+                            <a class="btn btn-outline-primary btn-sm" href="/admin/laboratorio-sobre-carousel.php">Editar carrossel</a>
+                        </div>
                         <form method="post">
                             <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
 

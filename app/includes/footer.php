@@ -1,21 +1,28 @@
 <?php
-$showStudentCalendarFooter = site_setting_get('show_student_calendar', '1') !== '0';
+$footerCfg = footer_get();
+$showStudentCalendarFooter = (bool)($footerCfg['show_calendar'] ?? true);
 $studentCalendarFooter = $showStudentCalendarFooter ? ufop_student_calendar() : null;
-$footerLinks = [
-    ['label' => 'Home', 'url' => '/'],
-    ['label' => 'O Laboratorio', 'url' => '/laboratorio/sobre.php'],
-    ['label' => 'Equipe', 'url' => '/laboratorio/equipe.php'],
-    ['label' => 'Projetos', 'url' => '/laboratorio/projetos.php'],
-    ['label' => 'Publicacoes', 'url' => '/laboratorio/publicacoes.php'],
-    ['label' => 'Cursos', 'url' => '/laboratorio/cursos.php'],
-    ['label' => 'Parceiros', 'url' => '/laboratorio/parceiros.php'],
-    ['label' => 'Tutoriais', 'url' => '/laboratorio/tutoriais.php'],
-    ['label' => 'Blog', 'url' => '/laboratorio/blog.php'],
-    ['label' => 'Eventos', 'url' => '/laboratorio/eventos.php'],
-    ['label' => 'Contato', 'url' => '/contato/index.php'],
-    ['label' => 'Noticias', 'url' => '/noticias/index.php'],
-    ['label' => 'Editais', 'url' => '/noticias/editais.php'],
-];
+$footerLinks = (array)($footerCfg['links'] ?? []);
+$footerBrandName = trim((string)($footerCfg['brand_name'] ?? SITE_NAME));
+$footerBrandSigla = trim((string)($footerCfg['brand_sigla'] ?? SITE_SIGLA));
+$footerBrandUniversity = trim((string)($footerCfg['brand_university'] ?? SITE_UNIVERSITY));
+$footerContactPhone = trim((string)($footerCfg['contact_phone'] ?? SITE_PHONE));
+$footerContactEmail = trim((string)($footerCfg['contact_email'] ?? SITE_EMAIL));
+if ($footerBrandName === '') {
+    $footerBrandName = SITE_NAME;
+}
+if ($footerBrandSigla === '') {
+    $footerBrandSigla = SITE_SIGLA;
+}
+if ($footerBrandUniversity === '') {
+    $footerBrandUniversity = SITE_UNIVERSITY;
+}
+if ($footerContactPhone === '') {
+    $footerContactPhone = SITE_PHONE;
+}
+if ($footerContactEmail === '') {
+    $footerContactEmail = SITE_EMAIL;
+}
 ?>
 <style>
 .footer-student-menu{background:linear-gradient(90deg,var(--decom-topbar-bg),var(--decom-topbar-bg-alt))!important;border-top:1px solid rgba(255,255,255,.22);color:#fff}
@@ -35,6 +42,13 @@ $footerLinks = [
 .scroll-top-progress span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:#fff;color:var(--decom-navy);font-size:1.15rem;font-weight:700;line-height:1}
 .scroll-top-progress span i{font-size:1.05rem;line-height:1}
 .scroll-top-progress:hover span,.scroll-top-progress:focus span{background:var(--decom-cyan);color:var(--decom-navy)}
+.site-footer{
+    margin-top:0 !important;
+    border-top:1px solid rgba(255,255,255,.18) !important;
+    background:linear-gradient(90deg,var(--decom-topbar-bg),var(--decom-topbar-bg-alt)) !important;
+    color:#fff;
+}
+.site-footer .text-muted{color:rgba(255,255,255,.82) !important}
 </style>
 <section class="footer-student-menu py-4">
     <div class="container">
@@ -114,7 +128,7 @@ $footerLinks = [
 <button id="scrollTopProgress" class="scroll-top-progress" type="button" aria-label="Voltar ao topo">
     <span><i class="bi bi-arrow-up" aria-hidden="true"></i></span>
 </button>
-<footer class="border-top mt-5 py-4"><div class="container d-flex justify-content-between flex-wrap gap-2"><div><strong><?= e(SITE_NAME) ?> (<?= e(SITE_SIGLA) ?>)</strong><br><span class="text-muted"><?= e(SITE_UNIVERSITY) ?></span></div><div class="text-muted text-end"><?= e(SITE_PHONE) ?><br><?= e(SITE_EMAIL) ?></div></div></footer>
+<footer class="site-footer py-4"><div class="container d-flex justify-content-between flex-wrap gap-2"><div><strong><?= e($footerBrandName) ?> (<?= e($footerBrandSigla) ?>)</strong><br><span class="text-muted"><?= e($footerBrandUniversity) ?></span></div><div class="text-muted text-end"><?= e($footerContactPhone) ?><br><?= e($footerContactEmail) ?></div></div></footer>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 (function () {
